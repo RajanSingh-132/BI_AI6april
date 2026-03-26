@@ -1,0 +1,501 @@
+lead_id,lead_source,industry,company_size,deal_stage,deal_value,owner,created_date
+L0001,Webinar,Ecommerce,100,Qualified,39792,Rahul,2026-01-07
+L0002,Webinar,Startup,100,Closed Won,4134,Vikas,2026-02-20
+L0003,LinkedIn,Startup,10,Closed Lost,35961,Amit,2026-02-10
+L0004,Website,SaaS,20,Negotiation,40076,Vivek,2026-02-11
+L0005,Google Ads,Education,50,Qualified,37950,Vikas,2026-01-31
+L0006,Google Ads,Startup,200,Proposal,25981,Rahul,2026-03-05
+L0007,Referral,Healthcare,100,Closed Lost,26399,Vikas,2026-02-21
+L0008,Google Ads,Startup,20,Closed Won,10594,Rahul,2026-01-13
+L0009,Google Ads,Healthcare,200,Negotiation,26961,Rahul,2026-01-19
+L0010,LinkedIn,Startup,10,Qualified,29624,Amit,2026-01-18
+L0011,Webinar,Education,50,Negotiation,21663,Vikas,2026-03-13
+L0012,Webinar,SaaS,100,Discovery,47255,Rahul,2026-01-08
+L0013,LinkedIn,Ecommerce,100,Closed Lost,8311,Amit,2026-02-12
+L0014,Google Ads,Ecommerce,50,Closed Won,38535,Vikas,2026-02-14
+L0015,Website,Startup,10,Proposal,46537,Rahul,2026-03-15
+L0016,Webinar,Education,20,Proposal,25272,Vikas,2026-03-28
+L0017,Webinar,Startup,100,Discovery,26973,Vikas,2026-03-01
+L0018,LinkedIn,Healthcare,50,Negotiation,43371,Amit,2026-01-10
+L0019,Website,Healthcare,50,Qualified,22544,Vikas,2026-03-25
+L0020,Google Ads,Ecommerce,200,Closed Lost,27916,Vikas,2026-02-26
+L0021,Google Ads,Education,200,Negotiation,29131,Rahul,2026-01-24
+L0022,Website,Healthcare,20,Closed Lost,18491,Vivek,2026-01-27
+L0023,LinkedIn,Startup,10,Discovery,6180,Amit,2026-03-12
+L0024,Website,SaaS,100,Closed Won,7455,Vivek,2026-02-03
+L0025,Webinar,Healthcare,10,Closed Lost,27548,Vikas,2026-01-30
+L0026,LinkedIn,Ecommerce,100,Closed Lost,10284,Rahul,2026-03-09
+L0027,LinkedIn,SaaS,10,Closed Lost,25385,Vikas,2026-03-02
+L0028,Referral,Education,50,Closed Won,31153,Rahul,2026-03-31
+L0029,Webinar,Healthcare,200,Closed Won,31920,Amit,2026-03-09
+L0030,Webinar,Ecommerce,50,Negotiation,37367,Rahul,2026-01-12
+L0031,Referral,Ecommerce,50,Negotiation,19026,Rahul,2026-02-08
+L0032,Website,SaaS,200,Qualified,24536,Vikas,2026-03-02
+L0033,Webinar,SaaS,100,Negotiation,21635,Vivek,2026-02-25
+L0034,Google Ads,Education,20,Discovery,37927,Vikas,2026-01-25
+L0035,Referral,Education,100,Negotiation,18377,Rahul,2026-03-24
+L0036,Referral,Startup,20,Proposal,7191,Amit,2026-03-22
+L0037,LinkedIn,Education,200,Closed Lost,46868,Vikas,2026-02-06
+L0038,Webinar,Ecommerce,100,Qualified,6486,Rahul,2026-01-18
+L0039,Google Ads,SaaS,100,Closed Won,31672,Vikas,2026-03-31
+L0040,Webinar,Startup,20,Proposal,3271,Rahul,2026-01-07
+L0041,Webinar,SaaS,20,Discovery,20488,Vikas,2026-01-17
+L0042,Referral,SaaS,20,Discovery,11875,Vivek,2026-03-05
+L0043,LinkedIn,Ecommerce,100,Proposal,34662,Vikas,2026-03-01
+L0044,Website,Ecommerce,10,Qualified,5672,Vikas,2026-02-20
+L0045,Website,Education,100,Qualified,14595,Vikas,2026-02-18
+L0046,Website,SaaS,20,Negotiation,31029,Rahul,2026-01-05
+L0047,LinkedIn,Startup,10,Closed Won,45647,Rahul,2026-03-02
+L0048,Referral,Ecommerce,50,Qualified,43232,Vivek,2026-03-12
+L0049,Webinar,SaaS,50,Negotiation,43846,Vikas,2026-01-26
+L0050,Google Ads,SaaS,20,Discovery,17464,Amit,2026-02-11
+L0051,Website,Healthcare,50,Closed Won,9841,Amit,2026-02-01
+L0052,Website,SaaS,200,Closed Lost,33147,Rahul,2026-02-17
+L0053,Website,Healthcare,20,Negotiation,7990,Vikas,2026-03-22
+L0054,Website,SaaS,50,Closed Lost,12087,Vivek,2026-01-17
+L0055,Referral,Healthcare,50,Closed Won,44247,Vikas,2026-02-26
+L0056,LinkedIn,SaaS,100,Proposal,49474,Rahul,2026-02-02
+L0057,Website,Startup,100,Closed Won,21314,Amit,2026-01-25
+L0058,Webinar,Healthcare,200,Proposal,23212,Amit,2026-02-05
+L0059,Webinar,Education,20,Discovery,36808,Rahul,2026-02-27
+L0060,Google Ads,Ecommerce,200,Proposal,31758,Vivek,2026-03-23
+L0061,Webinar,Startup,20,Discovery,42614,Vikas,2026-03-21
+L0062,LinkedIn,Ecommerce,10,Closed Lost,37321,Amit,2026-01-25
+L0063,Webinar,Startup,200,Qualified,42176,Vikas,2026-02-11
+L0064,Referral,Ecommerce,10,Discovery,36288,Vivek,2026-01-06
+L0065,LinkedIn,Healthcare,10,Qualified,9015,Amit,2026-01-25
+L0066,Website,SaaS,200,Closed Lost,27467,Amit,2026-03-09
+L0067,Webinar,Education,50,Discovery,26009,Rahul,2026-03-19
+L0068,Website,SaaS,20,Closed Lost,34204,Vivek,2026-03-01
+L0069,Website,Ecommerce,200,Closed Lost,29259,Vikas,2026-01-08
+L0070,Webinar,Ecommerce,200,Discovery,6612,Vikas,2026-01-10
+L0071,LinkedIn,Education,10,Discovery,49524,Rahul,2026-03-10
+L0072,Referral,Healthcare,20,Closed Won,45049,Rahul,2026-03-14
+L0073,LinkedIn,Education,200,Negotiation,8914,Vikas,2026-03-28
+L0074,Referral,Startup,10,Qualified,13822,Amit,2026-03-06
+L0075,Google Ads,Healthcare,200,Closed Won,31033,Vikas,2026-02-10
+L0076,Webinar,Ecommerce,50,Negotiation,43500,Amit,2026-02-11
+L0077,Webinar,Healthcare,200,Closed Won,16019,Amit,2026-03-12
+L0078,Google Ads,Ecommerce,100,Negotiation,28023,Vivek,2026-01-05
+L0079,Google Ads,Education,10,Closed Won,10852,Vikas,2026-01-01
+L0080,Google Ads,Healthcare,20,Proposal,3422,Vikas,2026-03-12
+L0081,Webinar,Education,200,Closed Won,12139,Vivek,2026-01-05
+L0082,Referral,Ecommerce,20,Qualified,19366,Vikas,2026-03-16
+L0083,LinkedIn,Healthcare,50,Proposal,8023,Amit,2026-03-14
+L0084,LinkedIn,SaaS,50,Negotiation,13331,Amit,2026-03-30
+L0085,Webinar,SaaS,200,Closed Lost,21686,Vivek,2026-03-15
+L0086,Referral,SaaS,10,Proposal,24801,Amit,2026-02-23
+L0087,Website,Healthcare,200,Discovery,43542,Amit,2026-01-07
+L0088,Google Ads,Education,10,Proposal,37384,Rahul,2026-02-11
+L0089,Webinar,Healthcare,20,Discovery,46147,Amit,2026-02-27
+L0090,Webinar,Education,200,Discovery,16554,Amit,2026-02-07
+L0091,Referral,Healthcare,20,Proposal,7409,Amit,2026-03-15
+L0092,Website,Education,100,Proposal,7575,Amit,2026-03-06
+L0093,Referral,Healthcare,20,Negotiation,38654,Rahul,2026-03-04
+L0094,Referral,Education,20,Closed Won,42369,Rahul,2026-02-01
+L0095,Website,Ecommerce,100,Proposal,46874,Vivek,2026-01-15
+L0096,Referral,Startup,50,Proposal,14483,Vikas,2026-02-14
+L0097,Webinar,SaaS,50,Qualified,24919,Amit,2026-03-21
+L0098,LinkedIn,Startup,10,Qualified,15086,Vikas,2026-01-20
+L0099,Website,SaaS,10,Qualified,42698,Rahul,2026-02-06
+L0100,Website,Ecommerce,10,Proposal,31495,Amit,2026-01-03
+L0101,Google Ads,Healthcare,200,Qualified,15356,Vikas,2026-03-12
+L0102,Referral,Education,20,Closed Lost,47793,Vivek,2026-02-18
+L0103,Webinar,Education,10,Proposal,13162,Vivek,2026-02-06
+L0104,LinkedIn,Education,50,Discovery,32471,Vivek,2026-01-09
+L0105,Referral,Ecommerce,50,Discovery,3250,Vikas,2026-03-25
+L0106,Referral,Healthcare,100,Closed Won,48510,Vivek,2026-02-10
+L0107,Referral,Education,200,Discovery,14217,Rahul,2026-03-06
+L0108,Referral,Education,10,Discovery,18213,Vikas,2026-02-12
+L0109,Referral,Startup,20,Discovery,24726,Vikas,2026-02-15
+L0110,Google Ads,Healthcare,200,Proposal,6063,Vikas,2026-02-19
+L0111,Website,Education,50,Qualified,11942,Vikas,2026-02-20
+L0112,LinkedIn,SaaS,100,Closed Won,46433,Rahul,2026-02-23
+L0113,LinkedIn,Education,20,Negotiation,22472,Vikas,2026-02-27
+L0114,Webinar,Healthcare,20,Closed Lost,11081,Rahul,2026-01-18
+L0115,Google Ads,Education,20,Negotiation,11512,Rahul,2026-02-10
+L0116,Website,Education,200,Closed Lost,9758,Rahul,2026-02-10
+L0117,LinkedIn,SaaS,50,Negotiation,28951,Vikas,2026-02-26
+L0118,Google Ads,Healthcare,20,Discovery,10620,Rahul,2026-01-04
+L0119,Webinar,Education,50,Closed Won,39161,Rahul,2026-03-18
+L0120,LinkedIn,Healthcare,10,Proposal,7208,Amit,2026-01-18
+L0121,Webinar,Education,100,Closed Lost,44570,Vikas,2026-01-24
+L0122,Referral,Startup,100,Qualified,12733,Rahul,2026-01-29
+L0123,Website,Startup,10,Proposal,29069,Rahul,2026-03-27
+L0124,LinkedIn,Healthcare,10,Qualified,30788,Amit,2026-03-30
+L0125,Google Ads,Startup,20,Negotiation,28533,Vivek,2026-03-19
+L0126,Referral,Ecommerce,100,Closed Won,39482,Vivek,2026-03-08
+L0127,Website,Startup,100,Discovery,18103,Amit,2026-01-06
+L0128,Webinar,Startup,200,Closed Lost,5230,Rahul,2026-02-07
+L0129,Referral,Startup,50,Proposal,32234,Rahul,2026-02-24
+L0130,Google Ads,Education,10,Closed Lost,35880,Rahul,2026-03-01
+L0131,Referral,SaaS,200,Discovery,13781,Rahul,2026-02-20
+L0132,Referral,Ecommerce,100,Discovery,13722,Amit,2026-03-17
+L0133,LinkedIn,Startup,10,Proposal,23238,Rahul,2026-01-16
+L0134,Website,SaaS,100,Closed Lost,25785,Vivek,2026-03-09
+L0135,Referral,Education,200,Qualified,26817,Amit,2026-01-06
+L0136,LinkedIn,Ecommerce,200,Closed Lost,11836,Rahul,2026-01-19
+L0137,LinkedIn,SaaS,100,Proposal,22284,Amit,2026-02-06
+L0138,LinkedIn,SaaS,20,Qualified,2231,Vikas,2026-01-02
+L0139,Referral,Startup,100,Closed Won,2376,Amit,2026-01-31
+L0140,LinkedIn,Education,100,Negotiation,28879,Amit,2026-01-11
+L0141,Webinar,Education,10,Qualified,37870,Vikas,2026-03-21
+L0142,Webinar,Healthcare,10,Qualified,11716,Vivek,2026-03-25
+L0143,Google Ads,SaaS,20,Discovery,45712,Vikas,2026-02-12
+L0144,Website,SaaS,10,Negotiation,13681,Rahul,2026-03-28
+L0145,Google Ads,Education,200,Closed Won,38842,Rahul,2026-02-28
+L0146,Webinar,Ecommerce,10,Discovery,21614,Vikas,2026-02-17
+L0147,Referral,SaaS,100,Closed Won,6254,Vikas,2026-03-02
+L0148,LinkedIn,SaaS,50,Proposal,36540,Amit,2026-03-09
+L0149,LinkedIn,Healthcare,200,Discovery,9163,Vivek,2026-03-03
+L0150,Webinar,Ecommerce,100,Closed Won,22741,Vikas,2026-03-09
+L0151,Webinar,Education,50,Qualified,42258,Amit,2026-03-08
+L0152,Referral,Startup,20,Closed Won,17251,Vikas,2026-01-25
+L0153,Website,SaaS,10,Negotiation,42990,Vivek,2026-01-27
+L0154,Webinar,Startup,100,Discovery,23875,Vikas,2026-03-13
+L0155,LinkedIn,SaaS,20,Closed Lost,20456,Vikas,2026-01-09
+L0156,Google Ads,Ecommerce,200,Closed Won,23228,Vivek,2026-01-15
+L0157,Google Ads,Ecommerce,100,Closed Lost,39284,Vivek,2026-01-23
+L0158,LinkedIn,Ecommerce,50,Closed Lost,33398,Amit,2026-01-05
+L0159,LinkedIn,Startup,20,Closed Lost,32187,Vikas,2026-03-01
+L0160,Referral,SaaS,200,Proposal,39024,Vikas,2026-03-13
+L0161,Webinar,SaaS,20,Closed Won,46924,Vikas,2026-02-15
+L0162,Website,Healthcare,50,Discovery,24226,Amit,2026-03-22
+L0163,Webinar,Healthcare,200,Closed Won,27530,Rahul,2026-03-18
+L0164,Website,Ecommerce,50,Closed Lost,4072,Vikas,2026-02-22
+L0165,Website,Startup,20,Proposal,31616,Vikas,2026-01-28
+L0166,Webinar,Ecommerce,20,Discovery,26524,Vivek,2026-01-26
+L0167,Website,Startup,200,Discovery,33631,Rahul,2026-01-25
+L0168,Google Ads,Startup,200,Proposal,23452,Rahul,2026-01-13
+L0169,Webinar,Healthcare,20,Closed Lost,4395,Amit,2026-02-19
+L0170,Webinar,SaaS,10,Proposal,4885,Vivek,2026-02-12
+L0171,Referral,SaaS,10,Closed Won,45187,Vikas,2026-01-03
+L0172,Webinar,Ecommerce,20,Proposal,15143,Rahul,2026-02-06
+L0173,Google Ads,Education,50,Negotiation,45982,Vivek,2026-02-04
+L0174,LinkedIn,Healthcare,50,Discovery,2999,Vivek,2026-01-27
+L0175,Webinar,Ecommerce,200,Proposal,19763,Rahul,2026-02-06
+L0176,Webinar,Healthcare,20,Discovery,22406,Vikas,2026-03-11
+L0177,Referral,SaaS,20,Discovery,32850,Vivek,2026-01-14
+L0178,Referral,SaaS,10,Negotiation,27684,Rahul,2026-03-18
+L0179,Webinar,Startup,200,Proposal,22476,Vikas,2026-01-26
+L0180,Webinar,SaaS,100,Closed Won,10637,Vivek,2026-03-31
+L0181,Referral,SaaS,100,Proposal,46857,Amit,2026-03-02
+L0182,LinkedIn,Healthcare,20,Closed Won,18911,Vikas,2026-02-20
+L0183,LinkedIn,Ecommerce,50,Negotiation,33949,Vivek,2026-01-09
+L0184,Referral,SaaS,50,Negotiation,32227,Rahul,2026-02-06
+L0185,Google Ads,Education,200,Qualified,35288,Vivek,2026-02-21
+L0186,Website,Ecommerce,200,Closed Lost,6648,Vikas,2026-03-10
+L0187,Referral,Startup,200,Negotiation,17635,Rahul,2026-03-12
+L0188,LinkedIn,Startup,100,Discovery,24329,Rahul,2026-03-30
+L0189,Webinar,Startup,100,Closed Won,24426,Rahul,2026-01-23
+L0190,Website,Education,100,Discovery,40808,Amit,2026-02-11
+L0191,Webinar,SaaS,100,Qualified,22187,Amit,2026-01-09
+L0192,Webinar,SaaS,200,Negotiation,23457,Amit,2026-03-24
+L0193,Website,SaaS,20,Qualified,40061,Vivek,2026-01-19
+L0194,LinkedIn,Startup,200,Proposal,27557,Amit,2026-01-26
+L0195,LinkedIn,Ecommerce,50,Closed Won,46535,Vikas,2026-02-25
+L0196,Google Ads,SaaS,200,Discovery,42074,Amit,2026-01-17
+L0197,Google Ads,SaaS,50,Closed Won,5481,Vivek,2026-03-13
+L0198,Google Ads,SaaS,50,Discovery,17416,Amit,2026-03-31
+L0199,Webinar,Startup,50,Closed Lost,27086,Amit,2026-02-18
+L0200,Referral,Education,20,Closed Lost,13364,Amit,2026-01-18
+L0201,LinkedIn,Education,100,Proposal,29343,Rahul,2026-02-06
+L0202,LinkedIn,Healthcare,10,Discovery,44492,Vivek,2026-01-19
+L0203,Referral,Startup,20,Discovery,10992,Amit,2026-02-28
+L0204,Webinar,Startup,200,Qualified,31779,Amit,2026-03-12
+L0205,Referral,Startup,50,Qualified,14176,Amit,2026-03-19
+L0206,Website,Education,100,Closed Lost,17515,Vikas,2026-02-22
+L0207,Webinar,Education,50,Discovery,4481,Amit,2026-02-17
+L0208,Website,Education,100,Closed Lost,7247,Rahul,2026-03-09
+L0209,Google Ads,Startup,200,Discovery,36298,Vivek,2026-02-01
+L0210,Referral,SaaS,200,Closed Won,22479,Vivek,2026-02-13
+L0211,Webinar,SaaS,100,Negotiation,35597,Amit,2026-03-15
+L0212,Google Ads,Startup,50,Proposal,20953,Rahul,2026-01-05
+L0213,Webinar,Ecommerce,200,Proposal,6025,Amit,2026-03-16
+L0214,LinkedIn,Education,10,Closed Lost,21120,Vivek,2026-02-06
+L0215,Referral,SaaS,20,Closed Won,7037,Vikas,2026-02-02
+L0216,LinkedIn,Education,50,Proposal,18839,Vivek,2026-01-15
+L0217,Webinar,Healthcare,200,Closed Lost,11904,Amit,2026-02-17
+L0218,LinkedIn,Ecommerce,20,Negotiation,13849,Vivek,2026-02-13
+L0219,Website,Healthcare,200,Qualified,34502,Amit,2026-02-19
+L0220,LinkedIn,Startup,20,Qualified,39863,Vikas,2026-01-07
+L0221,Google Ads,SaaS,10,Qualified,32409,Amit,2026-03-02
+L0222,Google Ads,Startup,200,Qualified,26890,Amit,2026-03-02
+L0223,Google Ads,Healthcare,200,Negotiation,2777,Vikas,2026-02-27
+L0224,Referral,Ecommerce,200,Closed Lost,4688,Vivek,2026-03-10
+L0225,Google Ads,Startup,200,Closed Lost,19864,Vikas,2026-02-04
+L0226,Google Ads,SaaS,50,Closed Lost,40284,Amit,2026-03-01
+L0227,LinkedIn,Education,20,Closed Won,24112,Rahul,2026-02-10
+L0228,Webinar,SaaS,10,Discovery,2783,Amit,2026-01-13
+L0229,Webinar,SaaS,100,Proposal,16379,Vikas,2026-02-02
+L0230,LinkedIn,SaaS,10,Closed Won,8025,Vivek,2026-03-18
+L0231,LinkedIn,Education,10,Closed Lost,9862,Vivek,2026-03-19
+L0232,LinkedIn,Startup,200,Qualified,9264,Rahul,2026-02-02
+L0233,Google Ads,Startup,10,Closed Lost,31716,Vikas,2026-02-24
+L0234,Google Ads,Ecommerce,20,Discovery,20172,Vivek,2026-02-18
+L0235,Referral,Ecommerce,10,Proposal,19345,Rahul,2026-02-26
+L0236,Website,Startup,20,Closed Won,27731,Rahul,2026-03-24
+L0237,Referral,SaaS,20,Closed Won,30262,Rahul,2026-03-20
+L0238,Website,Startup,50,Discovery,4284,Vivek,2026-01-10
+L0239,Webinar,Ecommerce,100,Discovery,34617,Rahul,2026-03-25
+L0240,Website,SaaS,100,Proposal,11935,Vikas,2026-02-20
+L0241,Webinar,SaaS,200,Closed Lost,34157,Amit,2026-02-25
+L0242,Referral,SaaS,200,Qualified,2216,Amit,2026-03-30
+L0243,Referral,SaaS,200,Closed Won,25522,Vikas,2026-03-29
+L0244,Google Ads,Startup,10,Closed Lost,44406,Vivek,2026-02-16
+L0245,Webinar,Ecommerce,10,Negotiation,21002,Rahul,2026-01-23
+L0246,Webinar,SaaS,100,Closed Lost,14517,Vikas,2026-03-31
+L0247,Referral,SaaS,50,Negotiation,7561,Amit,2026-01-25
+L0248,LinkedIn,SaaS,20,Discovery,49168,Rahul,2026-03-04
+L0249,Referral,SaaS,200,Closed Lost,22167,Amit,2026-03-10
+L0250,Referral,SaaS,10,Proposal,5673,Vikas,2026-01-06
+L0251,Referral,SaaS,20,Closed Lost,45733,Amit,2026-03-28
+L0252,Webinar,Healthcare,200,Qualified,6720,Vivek,2026-01-19
+L0253,Referral,SaaS,100,Closed Won,5001,Rahul,2026-03-31
+L0254,LinkedIn,SaaS,20,Closed Lost,5274,Vikas,2026-01-13
+L0255,Referral,Education,20,Closed Won,6191,Vivek,2026-01-15
+L0256,Referral,Education,200,Qualified,6135,Rahul,2026-02-24
+L0257,Google Ads,Startup,50,Discovery,46832,Rahul,2026-02-11
+L0258,LinkedIn,SaaS,200,Qualified,23987,Vivek,2026-01-16
+L0259,Google Ads,Healthcare,100,Qualified,47632,Vikas,2026-03-12
+L0260,LinkedIn,Startup,20,Closed Won,4667,Rahul,2026-01-13
+L0261,Webinar,Startup,20,Discovery,33913,Vivek,2026-01-01
+L0262,Website,Healthcare,10,Closed Lost,44713,Vikas,2026-02-23
+L0263,Referral,Healthcare,20,Qualified,43931,Vikas,2026-03-08
+L0264,Referral,Startup,20,Qualified,42012,Vivek,2026-03-18
+L0265,LinkedIn,Startup,200,Discovery,43103,Vikas,2026-02-14
+L0266,Referral,SaaS,200,Qualified,14576,Vivek,2026-03-09
+L0267,Website,Education,50,Closed Won,35262,Rahul,2026-03-01
+L0268,LinkedIn,Ecommerce,10,Qualified,9384,Rahul,2026-03-29
+L0269,Referral,Startup,20,Qualified,45918,Vivek,2026-01-07
+L0270,Google Ads,Ecommerce,20,Negotiation,18474,Vikas,2026-03-20
+L0271,Referral,SaaS,10,Closed Lost,5437,Rahul,2026-01-21
+L0272,Website,Startup,200,Discovery,6643,Rahul,2026-02-26
+L0273,Webinar,Education,50,Negotiation,15025,Vikas,2026-01-30
+L0274,Website,Ecommerce,20,Discovery,17539,Amit,2026-01-26
+L0275,Referral,Healthcare,10,Negotiation,40344,Amit,2026-01-07
+L0276,Referral,Healthcare,20,Closed Won,31818,Rahul,2026-02-19
+L0277,Google Ads,Healthcare,100,Closed Lost,14724,Vikas,2026-02-04
+L0278,LinkedIn,Ecommerce,20,Discovery,47364,Vivek,2026-02-05
+L0279,LinkedIn,SaaS,100,Negotiation,29408,Rahul,2026-02-13
+L0280,LinkedIn,Ecommerce,200,Qualified,43811,Rahul,2026-03-15
+L0281,Webinar,Healthcare,10,Negotiation,36194,Amit,2026-01-28
+L0282,Webinar,Startup,100,Proposal,2950,Amit,2026-02-01
+L0283,LinkedIn,Ecommerce,100,Closed Won,16575,Rahul,2026-03-15
+L0284,Website,Startup,10,Discovery,32844,Vivek,2026-02-24
+L0285,Webinar,Startup,100,Closed Lost,8422,Amit,2026-03-05
+L0286,LinkedIn,SaaS,200,Discovery,47426,Amit,2026-01-28
+L0287,LinkedIn,Ecommerce,50,Qualified,44443,Vivek,2026-01-03
+L0288,Referral,Ecommerce,20,Closed Lost,32099,Vivek,2026-02-28
+L0289,Referral,Healthcare,100,Qualified,26275,Amit,2026-03-23
+L0290,Website,SaaS,100,Closed Lost,23817,Vivek,2026-02-07
+L0291,Referral,Ecommerce,200,Closed Won,39698,Rahul,2026-03-29
+L0292,Website,Education,50,Closed Lost,5592,Vikas,2026-01-07
+L0293,Website,Startup,50,Negotiation,42575,Vivek,2026-02-16
+L0294,Google Ads,Healthcare,200,Closed Lost,6391,Rahul,2026-01-18
+L0295,Google Ads,Healthcare,200,Discovery,44535,Amit,2026-03-16
+L0296,LinkedIn,Healthcare,50,Proposal,19521,Amit,2026-02-05
+L0297,Website,SaaS,50,Proposal,31649,Amit,2026-03-06
+L0298,Webinar,SaaS,100,Closed Lost,36858,Vikas,2026-02-27
+L0299,Webinar,Ecommerce,10,Qualified,32007,Vivek,2026-01-11
+L0300,Referral,Healthcare,50,Discovery,9167,Rahul,2026-02-05
+L0301,Website,Healthcare,100,Qualified,15386,Vivek,2026-02-07
+L0302,Referral,Education,20,Negotiation,24721,Amit,2026-02-26
+L0303,Website,Ecommerce,20,Discovery,3444,Rahul,2026-03-08
+L0304,Google Ads,Startup,200,Proposal,44975,Vikas,2026-03-04
+L0305,Webinar,Education,200,Negotiation,32015,Vikas,2026-03-14
+L0306,LinkedIn,Ecommerce,20,Proposal,16862,Amit,2026-02-17
+L0307,Google Ads,SaaS,20,Proposal,20637,Amit,2026-01-22
+L0308,Webinar,Healthcare,200,Proposal,13945,Rahul,2026-03-30
+L0309,LinkedIn,Healthcare,20,Discovery,4696,Vikas,2026-03-15
+L0310,LinkedIn,Startup,50,Proposal,14091,Rahul,2026-03-13
+L0311,Website,Ecommerce,50,Qualified,26439,Amit,2026-03-11
+L0312,LinkedIn,Education,50,Discovery,3633,Amit,2026-03-05
+L0313,LinkedIn,Startup,50,Qualified,2281,Vikas,2026-03-24
+L0314,Google Ads,Startup,50,Closed Won,45705,Rahul,2026-03-14
+L0315,Referral,Ecommerce,10,Closed Lost,33390,Vivek,2026-01-18
+L0316,Webinar,SaaS,50,Discovery,28321,Rahul,2026-02-27
+L0317,Google Ads,SaaS,50,Discovery,41855,Rahul,2026-03-16
+L0318,Webinar,Healthcare,50,Qualified,3477,Vivek,2026-03-10
+L0319,Referral,SaaS,200,Negotiation,14743,Amit,2026-02-10
+L0320,Webinar,Education,200,Discovery,45697,Vikas,2026-02-20
+L0321,LinkedIn,Startup,50,Negotiation,26433,Vivek,2026-02-06
+L0322,Google Ads,Ecommerce,50,Negotiation,38767,Vivek,2026-01-28
+L0323,Referral,Startup,100,Proposal,12734,Amit,2026-02-23
+L0324,LinkedIn,Education,200,Discovery,11413,Rahul,2026-02-08
+L0325,Referral,Education,50,Discovery,40710,Amit,2026-01-12
+L0326,Website,Startup,50,Negotiation,13461,Amit,2026-03-14
+L0327,LinkedIn,Healthcare,20,Negotiation,20970,Amit,2026-01-06
+L0328,Google Ads,Education,50,Negotiation,38653,Amit,2026-01-29
+L0329,Website,SaaS,20,Proposal,21671,Amit,2026-01-16
+L0330,Google Ads,Startup,20,Negotiation,47078,Rahul,2026-01-04
+L0331,Website,Ecommerce,100,Discovery,41248,Vikas,2026-03-16
+L0332,Referral,Education,100,Proposal,43156,Amit,2026-03-30
+L0333,Website,Ecommerce,200,Closed Lost,39700,Vivek,2026-02-03
+L0334,LinkedIn,Education,10,Qualified,22950,Amit,2026-03-30
+L0335,LinkedIn,Ecommerce,20,Discovery,19869,Vikas,2026-02-23
+L0336,Google Ads,SaaS,50,Proposal,36708,Vivek,2026-03-07
+L0337,LinkedIn,Healthcare,10,Closed Won,12953,Vikas,2026-02-10
+L0338,Google Ads,Ecommerce,50,Discovery,37023,Vikas,2026-01-19
+L0339,Website,Healthcare,200,Proposal,26445,Amit,2026-02-22
+L0340,Google Ads,Healthcare,10,Qualified,12128,Rahul,2026-01-25
+L0341,Webinar,Education,200,Closed Won,48697,Vivek,2026-02-23
+L0342,Referral,SaaS,10,Qualified,3138,Amit,2026-02-14
+L0343,Google Ads,Ecommerce,20,Negotiation,41167,Vikas,2026-01-23
+L0344,Google Ads,SaaS,10,Qualified,10435,Rahul,2026-03-30
+L0345,LinkedIn,Ecommerce,20,Qualified,10533,Vivek,2026-02-24
+L0346,Website,SaaS,10,Negotiation,30262,Vivek,2026-01-26
+L0347,Website,SaaS,200,Closed Won,5884,Amit,2026-01-16
+L0348,Google Ads,SaaS,10,Proposal,45750,Vivek,2026-01-13
+L0349,Website,Education,20,Closed Won,15108,Rahul,2026-03-27
+L0350,Google Ads,SaaS,10,Qualified,20178,Vikas,2026-02-15
+L0351,LinkedIn,Education,200,Qualified,35089,Vivek,2026-01-13
+L0352,Webinar,SaaS,200,Qualified,48911,Rahul,2026-02-06
+L0353,LinkedIn,Education,10,Closed Lost,8467,Rahul,2026-03-06
+L0354,Referral,Ecommerce,200,Qualified,30813,Vivek,2026-01-24
+L0355,Google Ads,Startup,100,Qualified,35701,Rahul,2026-02-22
+L0356,Website,Ecommerce,10,Negotiation,9229,Rahul,2026-03-05
+L0357,Google Ads,Ecommerce,200,Closed Lost,4661,Vivek,2026-02-11
+L0358,Referral,SaaS,100,Proposal,31946,Vikas,2026-03-29
+L0359,Referral,Healthcare,200,Negotiation,21044,Amit,2026-01-25
+L0360,Website,Startup,50,Qualified,2837,Amit,2026-03-28
+L0361,Website,Startup,100,Closed Won,45158,Vivek,2026-01-16
+L0362,LinkedIn,Startup,100,Closed Lost,40702,Vivek,2026-01-22
+L0363,Website,Ecommerce,20,Proposal,15124,Amit,2026-01-16
+L0364,LinkedIn,Startup,100,Proposal,48759,Vikas,2026-03-24
+L0365,Referral,Ecommerce,100,Closed Lost,41529,Amit,2026-03-04
+L0366,Webinar,Ecommerce,20,Negotiation,9080,Vivek,2026-02-02
+L0367,Referral,Startup,20,Closed Lost,10821,Vivek,2026-01-13
+L0368,Website,SaaS,100,Closed Lost,3753,Rahul,2026-02-18
+L0369,Webinar,Ecommerce,20,Proposal,42761,Vivek,2026-01-10
+L0370,Webinar,Startup,100,Qualified,21238,Amit,2026-03-04
+L0371,Webinar,Ecommerce,200,Proposal,37424,Vivek,2026-01-05
+L0372,Referral,SaaS,100,Negotiation,22614,Amit,2026-02-26
+L0373,Referral,SaaS,10,Qualified,38481,Vikas,2026-01-22
+L0374,Referral,Startup,20,Proposal,48905,Amit,2026-03-04
+L0375,Website,Education,100,Closed Lost,38292,Amit,2026-03-02
+L0376,Webinar,Healthcare,200,Discovery,27649,Vikas,2026-03-05
+L0377,Webinar,Startup,200,Closed Lost,25118,Vikas,2026-02-11
+L0378,Website,SaaS,200,Discovery,10401,Vikas,2026-02-14
+L0379,Webinar,SaaS,50,Negotiation,8379,Amit,2026-02-14
+L0380,Google Ads,Startup,50,Discovery,45335,Rahul,2026-02-01
+L0381,LinkedIn,Ecommerce,200,Discovery,47088,Vivek,2026-02-09
+L0382,Website,Ecommerce,20,Discovery,37285,Vikas,2026-01-05
+L0383,Referral,Startup,200,Closed Won,29601,Vikas,2026-01-03
+L0384,Referral,Education,10,Proposal,26755,Amit,2026-02-11
+L0385,Webinar,SaaS,100,Discovery,47276,Rahul,2026-02-13
+L0386,Referral,Education,50,Qualified,42293,Vikas,2026-02-16
+L0387,Referral,Healthcare,100,Closed Lost,6936,Rahul,2026-02-06
+L0388,Google Ads,SaaS,50,Closed Won,28347,Rahul,2026-03-21
+L0389,Website,Education,10,Closed Won,24075,Vikas,2026-01-09
+L0390,Webinar,Education,100,Negotiation,15745,Vikas,2026-01-10
+L0391,Google Ads,Education,50,Negotiation,45480,Vikas,2026-01-26
+L0392,Referral,Startup,50,Closed Won,35775,Amit,2026-03-27
+L0393,Webinar,Healthcare,10,Closed Lost,48093,Rahul,2026-03-15
+L0394,Referral,Healthcare,100,Proposal,43807,Amit,2026-03-14
+L0395,Website,Education,20,Proposal,32309,Rahul,2026-01-31
+L0396,LinkedIn,Ecommerce,100,Negotiation,22883,Vivek,2026-03-23
+L0397,LinkedIn,Startup,50,Proposal,44339,Rahul,2026-02-02
+L0398,Webinar,Healthcare,100,Qualified,9442,Rahul,2026-01-25
+L0399,Website,Healthcare,50,Negotiation,33810,Amit,2026-02-24
+L0400,Website,Healthcare,20,Proposal,10941,Vivek,2026-02-03
+L0401,Google Ads,Education,20,Closed Lost,4767,Amit,2026-01-03
+L0402,Website,SaaS,50,Closed Won,21528,Vivek,2026-02-22
+L0403,Google Ads,SaaS,100,Closed Lost,11211,Rahul,2026-01-15
+L0404,Webinar,Education,10,Closed Won,45530,Vikas,2026-03-05
+L0405,Website,Healthcare,200,Discovery,22539,Vikas,2026-03-16
+L0406,Referral,Healthcare,100,Qualified,11455,Vivek,2026-01-23
+L0407,LinkedIn,Ecommerce,100,Negotiation,18666,Vivek,2026-03-04
+L0408,Webinar,Ecommerce,10,Proposal,37765,Amit,2026-03-02
+L0409,LinkedIn,Ecommerce,20,Proposal,33144,Vikas,2026-02-09
+L0410,Website,Education,10,Closed Lost,45399,Vivek,2026-03-30
+L0411,LinkedIn,Ecommerce,200,Negotiation,22268,Vikas,2026-03-29
+L0412,Website,Education,20,Negotiation,27458,Vivek,2026-02-20
+L0413,Google Ads,Ecommerce,10,Qualified,21491,Rahul,2026-01-21
+L0414,Referral,Ecommerce,100,Discovery,19959,Vivek,2026-03-04
+L0415,Referral,Startup,50,Closed Lost,29680,Vivek,2026-01-21
+L0416,Google Ads,Education,10,Proposal,29582,Vikas,2026-02-28
+L0417,Website,SaaS,20,Closed Lost,31058,Rahul,2026-01-01
+L0418,Referral,Healthcare,50,Proposal,39736,Vivek,2026-01-15
+L0419,LinkedIn,Healthcare,200,Closed Lost,44544,Rahul,2026-03-18
+L0420,Referral,Ecommerce,100,Negotiation,10749,Vikas,2026-01-23
+L0421,Webinar,Ecommerce,50,Qualified,7531,Amit,2026-02-17
+L0422,LinkedIn,Startup,100,Closed Won,16711,Vivek,2026-01-03
+L0423,Webinar,Education,20,Discovery,32305,Rahul,2026-02-03
+L0424,LinkedIn,SaaS,100,Closed Won,30108,Vikas,2026-01-20
+L0425,Website,Ecommerce,20,Closed Won,9690,Vivek,2026-03-09
+L0426,Referral,Startup,100,Discovery,16711,Rahul,2026-01-25
+L0427,Google Ads,Ecommerce,100,Negotiation,10532,Amit,2026-01-27
+L0428,Webinar,Healthcare,50,Closed Lost,46380,Rahul,2026-02-23
+L0429,LinkedIn,Startup,20,Discovery,21018,Vikas,2026-01-31
+L0430,Webinar,Startup,20,Proposal,40201,Amit,2026-01-11
+L0431,Website,Startup,20,Proposal,47417,Amit,2026-03-29
+L0432,LinkedIn,Startup,100,Closed Lost,41137,Vikas,2026-01-10
+L0433,Website,Education,10,Discovery,23814,Rahul,2026-03-02
+L0434,Google Ads,Education,200,Closed Lost,4982,Vivek,2026-02-02
+L0435,Webinar,Education,100,Proposal,27866,Vikas,2026-01-17
+L0436,Webinar,SaaS,200,Qualified,19058,Rahul,2026-03-06
+L0437,Referral,Ecommerce,100,Qualified,7875,Vikas,2026-03-09
+L0438,Referral,Healthcare,50,Discovery,22530,Vivek,2026-01-17
+L0439,Referral,Ecommerce,50,Negotiation,20541,Vikas,2026-03-20
+L0440,Google Ads,Education,50,Negotiation,12812,Vikas,2026-03-04
+L0441,LinkedIn,Education,100,Discovery,14381,Rahul,2026-01-07
+L0442,LinkedIn,Healthcare,10,Negotiation,19054,Rahul,2026-03-01
+L0443,Referral,SaaS,100,Discovery,30935,Vikas,2026-03-13
+L0444,Referral,Startup,100,Discovery,49170,Rahul,2026-01-16
+L0445,Google Ads,SaaS,20,Proposal,13839,Rahul,2026-03-07
+L0446,Google Ads,Education,200,Qualified,40243,Vivek,2026-03-09
+L0447,Webinar,Healthcare,100,Discovery,18132,Amit,2026-03-28
+L0448,Website,Ecommerce,10,Proposal,46650,Vivek,2026-02-20
+L0449,Google Ads,Education,10,Proposal,12077,Vivek,2026-01-11
+L0450,Referral,Startup,100,Closed Lost,19650,Vivek,2026-02-12
+L0451,Website,Education,100,Proposal,49942,Rahul,2026-01-28
+L0452,Website,Ecommerce,50,Discovery,6634,Amit,2026-01-12
+L0453,Referral,Ecommerce,20,Qualified,28143,Vivek,2026-01-03
+L0454,LinkedIn,Healthcare,100,Negotiation,20673,Rahul,2026-01-16
+L0455,Google Ads,Startup,100,Closed Lost,22322,Rahul,2026-02-15
+L0456,Website,Ecommerce,200,Qualified,34087,Amit,2026-02-19
+L0457,Referral,Ecommerce,200,Closed Won,29726,Vivek,2026-02-24
+L0458,Google Ads,Education,20,Negotiation,43332,Amit,2026-01-12
+L0459,Website,Education,50,Negotiation,46331,Rahul,2026-03-24
+L0460,LinkedIn,Startup,200,Closed Lost,44416,Vivek,2026-02-07
+L0461,Referral,Startup,10,Negotiation,21686,Rahul,2026-01-17
+L0462,Google Ads,Healthcare,200,Negotiation,21364,Vivek,2026-03-12
+L0463,Website,SaaS,200,Discovery,35466,Amit,2026-02-22
+L0464,Website,Startup,200,Proposal,25295,Vikas,2026-03-16
+L0465,Website,Education,10,Discovery,45357,Amit,2026-01-23
+L0466,LinkedIn,Startup,10,Discovery,29279,Vikas,2026-02-10
+L0467,Webinar,Startup,100,Closed Won,19371,Vikas,2026-01-24
+L0468,LinkedIn,Healthcare,10,Closed Lost,41587,Vikas,2026-03-28
+L0469,Website,Startup,200,Discovery,2383,Amit,2026-01-15
+L0470,Website,Healthcare,100,Negotiation,47338,Amit,2026-03-26
+L0471,Webinar,Startup,50,Closed Won,42418,Vikas,2026-03-30
+L0472,Referral,Ecommerce,10,Qualified,10854,Vivek,2026-01-25
+L0473,Website,SaaS,20,Discovery,15712,Amit,2026-03-25
+L0474,LinkedIn,Healthcare,100,Closed Lost,37296,Rahul,2026-01-12
+L0475,Google Ads,Startup,20,Negotiation,29648,Vivek,2026-01-15
+L0476,LinkedIn,Healthcare,100,Negotiation,32899,Vivek,2026-02-27
+L0477,Webinar,Healthcare,20,Proposal,39318,Amit,2026-01-07
+L0478,Google Ads,SaaS,10,Closed Lost,48733,Amit,2026-02-23
+L0479,Referral,Education,200,Closed Lost,38326,Vikas,2026-01-05
+L0480,Referral,Startup,100,Closed Won,40734,Amit,2026-01-30
+L0481,Website,Education,10,Negotiation,39775,Vikas,2026-03-12
+L0482,Website,Ecommerce,100,Negotiation,9663,Amit,2026-03-21
+L0483,Google Ads,Startup,100,Discovery,12573,Vikas,2026-01-25
+L0484,Referral,Ecommerce,100,Qualified,35268,Rahul,2026-03-17
+L0485,Google Ads,Education,100,Qualified,21227,Amit,2026-02-23
+L0486,Google Ads,Startup,20,Closed Won,15579,Vikas,2026-03-30
+L0487,Website,Startup,20,Qualified,15073,Rahul,2026-03-19
+L0488,Referral,SaaS,100,Negotiation,21900,Rahul,2026-01-27
+L0489,Webinar,SaaS,10,Proposal,19092,Vikas,2026-03-28
+L0490,LinkedIn,Healthcare,200,Discovery,6172,Vikas,2026-02-25
+L0491,Website,Education,20,Discovery,38830,Rahul,2026-03-04
+L0492,Google Ads,Ecommerce,50,Discovery,38505,Vikas,2026-01-20
+L0493,Webinar,Education,10,Closed Lost,5304,Amit,2026-02-28
+L0494,Website,SaaS,200,Closed Won,8676,Vivek,2026-03-06
+L0495,Website,Healthcare,10,Qualified,25700,Rahul,2026-02-07
+L0496,Referral,Education,100,Closed Lost,8507,Rahul,2026-03-24
+L0497,Google Ads,Ecommerce,20,Discovery,15231,Amit,2026-02-23
+L0498,Website,Healthcare,100,Proposal,20792,Rahul,2026-01-11
+L0499,Google Ads,Ecommerce,100,Proposal,43251,Rahul,2026-01-20
+L0500,Webinar,Startup,20,Qualified,30103,Amit,2026-02-22

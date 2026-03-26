@@ -1,17 +1,15 @@
-import os
-from dotenv import load_dotenv
-from mongo_client import MongoDBClient
+from database.mongo import documents_collection
 
-# Load environment variables
-load_dotenv()
+count = documents_collection.count_documents({})
 
-uri = os.getenv("MONGO_URI")
-db_name = os.getenv("DB_NAME")
+print("Total documents:", count)
 
-mongo = MongoDBClient(uri, db_name)
+doc = documents_collection.find_one()
 
-mongo.connect_with_retry()
+print("\nSample document:\n")
+print(doc)
 
-print("✅ MongoDB Connected Successfully")
-
-mongo.close()
+if doc and "embedding" in doc:
+    print("\nEmbedding length:", len(doc["embedding"]))
+else:
+    print("\n⚠ No embedding found")

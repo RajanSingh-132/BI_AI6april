@@ -1,0 +1,101 @@
+Date,Lead_ID,Lead_Source,Industry,Company_Size,Deal_Stage,Deal_Value,Owner,Probability (%)
+2026-01-01,L0001,LinkedIn,Healthcare,240,Proposal,49435,Vikas,60
+2026-01-02,L0002,Webinar,Education,151,Negotiation,27999,Vivek,60
+2026-01-03,L0003,LinkedIn,Education,104,Proposal,49767,Rahul,50
+2026-01-04,L0004,LinkedIn,Education,34,Proposal,25011,Vikas,0
+2026-01-05,L0005,LinkedIn,Education,58,Proposal,17907,Vikas,50
+2026-01-06,L0006,LinkedIn,Ecommerce,64,Qualified,44134,Amit,40
+2026-01-07,L0007,Webinar,Education,276,Proposal,10569,Vikas,40
+2026-01-08,L0008,Website,Healthcare,172,Closed Lost,32498,Vikas,0
+2026-01-09,L0009,Website,Ecommerce,289,Closed Won,48693,Amit,40
+2026-01-10,L0010,Webinar,Healthcare,122,Proposal,20406,Vivek,50
+2026-01-11,L0011,Website,Education,14,Closed Lost,47318,Amit,0
+2026-01-12,L0012,Referral,Startup,135,Negotiation,56149,Vikas,40
+2026-01-13,L0013,Website,SaaS,240,Closed Lost,22836,Rahul,70
+2026-01-14,L0014,Google Ads,Healthcare,53,Negotiation,54470,Amit,70
+2026-01-15,L0015,Website,Ecommerce,246,Qualified,55878,Rahul,70
+2026-01-16,L0016,Website,Startup,173,Closed Won,52662,Amit,50
+2026-01-17,L0017,Referral,Education,273,Qualified,58667,Rahul,70
+2026-01-18,L0018,Referral,Education,146,Proposal,54883,Amit,40
+2026-01-19,L0019,Referral,Education,109,Qualified,15755,Rahul,50
+2026-01-20,L0020,Referral,Ecommerce,197,Negotiation,36818,Rahul,100
+2026-01-21,L0021,Website,Healthcare,285,Closed Won,35445,Vikas,40
+2026-01-22,L0022,Webinar,Ecommerce,111,Qualified,20471,Vivek,100
+2026-01-23,L0023,Google Ads,Healthcare,89,Closed Lost,54744,Amit,0
+2026-01-24,L0024,Webinar,Healthcare,75,Qualified,28350,Amit,70
+2026-01-25,L0025,Website,Startup,176,Closed Won,44389,Vivek,70
+2026-01-26,L0026,Website,Education,205,Qualified,19621,Vikas,60
+2026-01-27,L0027,Referral,Ecommerce,34,Proposal,40609,Rahul,100
+2026-01-28,L0028,Webinar,Startup,42,Closed Won,23609,Rahul,60
+2026-01-29,L0029,LinkedIn,Education,92,Qualified,26707,Rahul,70
+2026-01-30,L0030,Referral,Ecommerce,77,Qualified,15656,Rahul,50
+2026-01-31,L0031,Webinar,Education,34,Closed Won,23444,Rahul,50
+2026-02-01,L0032,Website,Healthcare,137,Negotiation,27742,Amit,50
+2026-02-02,L0033,Referral,SaaS,230,Closed Won,50395,Amit,40
+2026-02-03,L0034,LinkedIn,SaaS,242,Closed Lost,51403,Amit,40
+2026-02-04,L0035,LinkedIn,SaaS,12,Closed Won,27372,Rahul,100
+2026-02-05,L0036,Google Ads,Ecommerce,272,Closed Lost,39482,Vivek,60
+2026-02-06,L0037,Webinar,Education,86,Closed Won,46303,Amit,70
+2026-02-07,L0038,LinkedIn,SaaS,39,Closed Lost,35620,Vikas,50
+2026-02-08,L0039,Website,Healthcare,207,Proposal,35547,Vikas,100
+2026-02-09,L0040,LinkedIn,Healthcare,195,Negotiation,56213,Vikas,0
+2026-02-10,L0041,Referral,SaaS,147,Closed Lost,18675,Amit,0
+2026-02-11,L0042,Webinar,Ecommerce,229,Closed Lost,43229,Amit,60
+2026-02-12,L0043,Google Ads,Education,121,Qualified,50360,Vivek,60
+2026-02-13,L0044,Website,Startup,241,Closed Lost,49649,Rahul,60
+2026-02-14,L0045,Webinar,Ecommerce,93,Closed Lost,54471,Vikas,100
+2026-02-15,L0046,Website,Ecommerce,202,Proposal,50114,Amit,70
+2026-02-16,L0047,Webinar,Healthcare,24,Qualified,26952,Rahul,100
+2026-02-17,L0048,Website,Ecommerce,71,Negotiation,31901,Rahul,40
+2026-02-18,L0049,LinkedIn,Healthcare,244,Proposal,42648,Vikas,40
+2026-02-19,L0050,Webinar,SaaS,22,Proposal,16663,Rahul,50
+2026-02-20,L0051,Website,Ecommerce,35,Qualified,30448,Vikas,50
+2026-02-21,L0052,Referral,Healthcare,257,Negotiation,27756,Amit,40
+2026-02-22,L0053,Google Ads,Healthcare,256,Closed Lost,18998,Vivek,0
+2026-02-23,L0054,Website,SaaS,33,Qualified,59509,Amit,70
+2026-02-24,L0055,LinkedIn,Healthcare,204,Closed Lost,18983,Amit,100
+2026-02-25,L0056,Webinar,Education,147,Proposal,11321,Rahul,100
+2026-02-26,L0057,Webinar,Startup,212,Negotiation,22613,Amit,70
+2026-02-27,L0058,Google Ads,SaaS,175,Proposal,39717,Rahul,60
+2026-02-28,L0059,Website,Healthcare,193,Closed Lost,46917,Amit,60
+2026-03-01,L0060,LinkedIn,Healthcare,151,Closed Won,33415,Vivek,70
+2026-03-02,L0061,LinkedIn,Healthcare,15,Closed Won,13823,Vivek,60
+2026-03-03,L0062,Referral,Education,248,Closed Lost,53763,Rahul,100
+2026-03-04,L0063,Google Ads,Healthcare,153,Proposal,40212,Rahul,60
+2026-03-05,L0064,Google Ads,Startup,80,Closed Lost,34912,Vivek,0
+2026-03-06,L0065,Referral,Education,56,Proposal,31392,Vikas,100
+2026-03-07,L0066,Referral,Startup,272,Negotiation,37005,Rahul,70
+2026-03-08,L0067,Google Ads,Ecommerce,247,Closed Lost,35017,Vikas,70
+2026-03-09,L0068,LinkedIn,Education,290,Closed Lost,54707,Rahul,50
+2026-03-10,L0069,Website,SaaS,131,Closed Won,32833,Vikas,40
+2026-03-11,L0070,LinkedIn,Education,147,Closed Won,57568,Vikas,40
+2026-03-12,L0071,LinkedIn,Startup,87,Closed Won,43820,Rahul,60
+2026-03-13,L0072,Referral,Education,88,Qualified,25745,Vivek,0
+2026-03-14,L0073,Website,SaaS,300,Qualified,37738,Amit,50
+2026-03-15,L0074,LinkedIn,Education,291,Qualified,39770,Rahul,50
+2026-03-16,L0075,Website,SaaS,254,Proposal,19747,Rahul,100
+2026-03-17,L0076,Website,Startup,65,Qualified,50188,Amit,40
+2026-03-18,L0077,Webinar,Ecommerce,278,Qualified,31998,Vivek,70
+2026-03-19,L0078,Webinar,Startup,44,Proposal,54376,Vikas,50
+2026-03-20,L0079,Website,Healthcare,79,Proposal,58998,Amit,0
+2026-03-21,L0080,Referral,Healthcare,223,Closed Won,13103,Vikas,100
+2026-03-22,L0081,Referral,Healthcare,177,Closed Lost,18855,Rahul,70
+2026-03-23,L0082,Website,Startup,252,Qualified,34530,Rahul,50
+2026-03-24,L0083,Website,Startup,250,Negotiation,15382,Vikas,60
+2026-03-25,L0084,LinkedIn,Startup,106,Negotiation,14974,Vikas,70
+2026-03-26,L0085,Referral,Ecommerce,101,Negotiation,53982,Rahul,40
+2026-03-27,L0086,Webinar,Startup,153,Closed Won,59109,Vivek,0
+2026-03-28,L0087,Webinar,SaaS,37,Closed Lost,53927,Vikas,100
+2026-03-29,L0088,Google Ads,Healthcare,287,Negotiation,27196,Vikas,50
+2026-03-30,L0089,Webinar,Ecommerce,166,Proposal,21423,Vivek,50
+2026-03-31,L0090,Website,Ecommerce,142,Closed Lost,57623,Vivek,100
+2026-04-01,L0091,Website,Startup,87,Closed Lost,34926,Amit,0
+2026-04-02,L0092,Website,SaaS,296,Negotiation,43073,Vivek,100
+2026-04-03,L0093,Referral,Ecommerce,181,Proposal,54319,Rahul,40
+2026-04-04,L0094,LinkedIn,Ecommerce,162,Proposal,14459,Vivek,40
+2026-04-05,L0095,Webinar,Startup,66,Negotiation,20074,Amit,0
+2026-04-06,L0096,Google Ads,Ecommerce,221,Negotiation,54387,Rahul,100
+2026-04-07,L0097,LinkedIn,Healthcare,79,Negotiation,52349,Vivek,50
+2026-04-08,L0098,LinkedIn,Healthcare,237,Closed Lost,35205,Amit,70
+2026-04-09,L0099,Google Ads,Education,19,Closed Lost,56617,Rahul,0
+2026-04-10,L0100,LinkedIn,Ecommerce,195,Closed Won,46176,Rahul,40

@@ -4,3 +4,9 @@ pymongo
 python-dotenv
 pydantic
 google-genai
+boto3
+pandas
+numpy
+openpyxl
+python-multipart
+langchain

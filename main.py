@@ -1,44 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.chat_routes import router as chat_router
+from routes.upload import router as upload_router
 from mongo_client import MongoDBClient
-from utils.request_tracker import tracker
 from dotenv import load_dotenv
 
-# ==========================
 # Load Environment Variables
-# ==========================
 load_dotenv()
 
-# ==========================
-# FastAPI App
-# ==========================
 app = FastAPI(title="AI Chatbot with MongoDB")
 
-# ==========================
 # MongoDB Instance
-# ==========================
 mongo = MongoDBClient()
+app.state.mongo = mongo
 
-# ==========================
-# Startup Event
-# ==========================
-@app.on_event("startup")
-def startup_db():
-    mongo.connect_with_retry()
-    app.state.mongo = mongo
-
-# ==========================
 # Shutdown Event
-# ==========================
 @app.on_event("shutdown")
 def shutdown_db():
     mongo.close()
 
-# ==========================
 # CORS Middleware
-# Allow all origins
-# ==========================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,14 +28,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================
-# Routes
-# ==========================
-app.include_router(chat_router)
+# ✅ Routes with prefix (IMPORTANT)
+app.include_router(chat_router, prefix="/api")
+app.include_router(upload_router, prefix="/api")
 
-# ==========================
-# Health Check / Root Route
-# ==========================
+# Health Check
 @app.get("/")
 def home():
     return {"message": "AI Chatbot Running 🚀"}

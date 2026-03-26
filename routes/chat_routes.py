@@ -1,18 +1,42 @@
 from fastapi import APIRouter, HTTPException
-from prompt import format_response
-from services.ai_services import generate_ai_response
+from models import ChatRequest
 from utils.request_tracker import tracker
-from services.conversationsSaver import save_chat, get_chat_history
-
+from services.conversationsSaver import get_chat_history
+from services.ai_services import generate_ai_response
 router = APIRouter()
 
-tracker.api_hit()
 
 @router.post("/chat")
-async def chat(data: dict):
-    user_message = data.get("message")
-    user_id = "user1"
-    history = get_chat_history(user_id)
-    ai_text = generate_ai_response(user_id, user_message, history)
-    save_chat(user_id, user_message, ai_text)
-    return {"response": ai_text}
+async def chat(req: ChatRequest):
+
+    try:
+        tracker.api_hit()
+
+        if not req.chat_history:
+            raise HTTPException(status_code=400, detail="Chat history empty")
+
+        user_message = req.chat_history[-1].content.strip()
+        user_id = "user1"
+
+        history = get_chat_history(user_id)
+
+        # ✅ File upload case
+        if "file uploaded" in user_message.lower():
+            return {
+                "answer": "File uploaded successfully ✅\n\n👉 Now ask your question from the dataset.",
+                "kpis": [],
+                "charts": []
+            }
+
+        # ✅ ONLY THIS
+        result = generate_ai_response(user_id, user_message, history)
+
+        return result
+
+    except Exception as e:
+        print("Chat API Error:", e)
+
+        raise HTTPException(
+            status_code=500,
+            detail="Chat service unavailable"
+        )
