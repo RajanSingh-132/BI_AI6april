@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from models import ChatRequest
 from utils.request_tracker import tracker
 from services.conversationsSaver import get_chat_history
@@ -7,7 +7,7 @@ router = APIRouter()
 
 
 @router.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
 
     try:
         tracker.api_hit()
@@ -28,8 +28,8 @@ async def chat(req: ChatRequest):
                 "charts": []
             }
 
-        # ✅ ONLY THIS
-        result = generate_ai_response(user_id, user_message, history)
+        # ✅ ONLY THIS - pass request so ai_services can access app state
+        result = generate_ai_response(user_id, user_message, history, request)
 
         return result
 

@@ -279,13 +279,24 @@ FINAL OUTPUT MUST BE VALID JSON:
 {
   "answer": "<HTML formatted explanation>",
   "kpis": [
-    { "title": "metric name", "value": number }
+    {
+      "name": "metric name",
+      "value": number,
+      "unit": "$ or % or count or empty",
+      "insight": "business interpretation"
+    }
   ],
   "charts": [
     {
-      "type": "bar | pie | line",
+      "type": "bar|pie|line",
+      "title": "Chart Title",
+      "x_axis": "field_name",
+      "y_axis": "value_field",
+      "x_axis_label": "Human Readable Label",
+      "y_axis_label": "Human Readable Label",
       "data": [
-        { "label": "category", "value": number }
+        { "category_field": "value1", "value_field": 100 },
+        { "category_field": "value2", "value_field": 200 }
       ]
     }
   ]
@@ -294,24 +305,29 @@ FINAL OUTPUT MUST BE VALID JSON:
 --------------------------------------
 
 KPI RULES:
-- Select top important metrics only
-- Use calculated results (not raw values)
-- Keep max 3-4 KPIs
+- Select top 1-3 important metrics only
+- Include "unit" field ($, %, count, etc.)
+- Include short "insight" for business context
+- Use actual calculated values
 
---------------------------------------
+CHART RULES FOR FIELD NAMES:
+- "x_axis": Use actual column name from data (e.g., "stage", "month", "owner")
+- "y_axis": Use actual metric name (e.g., "value", "count", "revenue")
+- Create "data" array using these exact field names
+- Example:
+  * If grouping by owner → x_axis: "owner", data: [{owner: "Amit", value: 100}, ...]
+  * If grouping by date → x_axis: "date", data: [{date: "2026-01-01", value: 100}, ...]
 
-CHART RULES:
-- If category distribution → pie chart
-- If comparison → bar chart
-- If date/time present → line chart
-
---------------------------------------
+CHART SELECTION LOGIC:
+- Category with high cardinality (>2 categories, compare values) → bar chart
+- Category with low cardinality or percentages (<=5 categories, show parts) → pie chart
+- Time-based data (dates, months, years) → line chart
 
 IMPORTANT:
-- DO NOT hardcode column names
-- Always detect from dataset
-- Use already calculated values
-- Ensure JSON is valid and parseable
+- DO NOT hardcode column names or categories
+- Always detect from actual dataset
+- Ensure JSON is ALWAYS valid parseable
+- Never skip charts - always generate at least 1 relevant chart
 
 --------------------------------------------------
 

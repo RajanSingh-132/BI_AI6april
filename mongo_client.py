@@ -82,16 +82,61 @@ class MongoDBClient:
     def save_result(self, result_data):
 
         try:
+            print("\n" + "🟣"*30)
+            print("MONGO SAVE: Checkpoint 1 - Function called")
+            print(f"   Data keys: {list(result_data.keys())}")
+            
+            # Validate required fields
+            if not result_data.get("answer"):
+                logger.warning("🟣 [MONGO] Empty answer, skipping save")
+                print("🟣 [MONGO] Empty answer, skipping save")
+                return False
+            
+            if not result_data.get("kpis"):
+                logger.warning(f"🟣 [MONGO] No KPIs for query: {result_data.get('query')}")
+                print(f"🟣 [MONGO] Warning: No KPIs for query: {result_data.get('query')}")
+            
+            if not result_data.get("charts"):
+                logger.warning(f"🟣 [MONGO] No Charts for query: {result_data.get('query')}")
+                print(f"🟣 [MONGO] Warning: No Charts for query: {result_data.get('query')}")
+            
+            print("\n🟣 MONGO SAVE: Checkpoint 2 - Preparing data")
             result_data["query"] = result_data["query"].strip().lower()
+            result_data["timestamp"] = __import__('datetime').datetime.utcnow()
 
-            print("📦 Saving to collection:", self.results_collection.name)
+            print(f"   file_name: {result_data.get('file_name')}")
+            print(f"   query: {result_data.get('query')}")
+            print(f"   answer_length: {len(result_data.get('answer', ''))}")
+            print(f"   kpis_count: {len(result_data.get('kpis', []))}")
+            print(f"   charts_count: {len(result_data.get('charts', []))}")
 
-            self.results_collection.insert_one(result_data)
+            print("\n🟣 MONGO SAVE: Checkpoint 3 - Inserting to collection")
+            print(f"   Collection name: {self.results_collection.name}")
+            print(f"   Collection object: {self.results_collection}")
 
-            logger.info("[MONGO] Result saved ✅")
+            insert_result = self.results_collection.insert_one(result_data)
+            
+            print(f"\n🟣 MONGO SAVE: Checkpoint 4 - Insert completed")
+            print(f"   Inserted ID: {insert_result.inserted_id}")
+            
+            if insert_result.inserted_id:
+                logger.info(f"✅ [MONGO] Result saved with ID: {insert_result.inserted_id}")
+                print(f"✅ [MONGO] Result saved with ID: {insert_result.inserted_id}")
+                print("🟣"*30 + "\n")
+                return True
+            else:
+                logger.error("🟣 [MONGO] Insert failed - no ID returned")
+                print("🟣 [MONGO] Insert failed - no ID returned")
+                print("🟣"*30 + "\n")
+                return False
 
         except Exception as e:
-            logger.error(f"[MONGO] Save result error: {e}")
+            logger.error(f"🟣 [MONGO] Save result error: {e}")
+            print(f"🟣 [MONGO] SAVE ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            print("🟣"*30 + "\n")
+            return False
 
     # ----------------------------
     # Get Cached Result

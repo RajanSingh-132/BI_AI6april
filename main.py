@@ -14,6 +14,9 @@ app = FastAPI(title="AI Chatbot with MongoDB")
 mongo = MongoDBClient()
 app.state.mongo = mongo
 
+# Initialize active dataset tracker
+app.state.ACTIVE_DATASET = None
+
 # Shutdown Event
 @app.on_event("shutdown")
 def shutdown_db():

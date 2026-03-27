@@ -6,6 +6,7 @@ from embeddingclient import BedrockEmbeddingClient
 
 router = APIRouter()
 
+# Global tracker for active dataset
 ACTIVE_DATASET = None
 
 @router.post("/upload-json")
@@ -28,8 +29,23 @@ async def upload_json(request: Request):
         if not data or not isinstance(data, list):
             raise HTTPException(status_code=400, detail="Invalid data format")
 
-        # ✅ SAVE ACTIVE DATASET
+        # ✅ SAVE ACTIVE DATASET - EVERYWHERE
         ACTIVE_DATASET = file_name
+        request.app.state.ACTIVE_DATASET = file_name
+        
+        # ✅ ALSO SAVE TO MONGODB AS METADATA
+        db["metadata"].update_one(
+            {"_id": "active_dataset"},
+            {"$set": {"value": file_name, "timestamp": __import__('datetime').datetime.utcnow()}},
+            upsert=True
+        )
+        
+        print(f"\n{'='*70}")
+        print(f"🎯 SET ACTIVE DATASET: {file_name}")
+        print(f"   Module var: {ACTIVE_DATASET}")
+        print(f"   App state: {request.app.state.ACTIVE_DATASET}")
+        print(f"   MongoDB metadata: {file_name}")
+        print(f"{'='*70}\n")
 
         cleaned_data = []
         for row in data:
