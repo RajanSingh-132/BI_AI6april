@@ -73,10 +73,25 @@ QUERY UNDERSTANDING (CRITICAL)
 
 3. MULTI-DATASET COMPARISON (WHEN APPLICABLE):
    - If query mentions "compare", "vs", "between", or multiple datasets:
-     * Compare same metrics across different datasets
-     * Show side-by-side analysis
-     * Highlight differences and patterns
-     * Identify which dataset performs better on each metric
+     * Compare same metrics across different datasets side-by-side
+     * Show comparative insights: "Dataset1: $500K | Dataset2: $150K | Difference: 3.3x"
+     * Highlight differences, patterns, and which dataset performs better
+     * ALWAYS specify dataset name in every comparison result
+     * ONLY return KPIs with enriched context (Name | Industry | Value | Difference)
+   
+   - CHART OUTPUT FOR COMPARISON MODE:
+     * Chart 1: Comparison Bar Chart (side-by-side by dataset)
+       - Title: "METRIC COMPARISON: [Metric] [Dataset1] vs [Dataset2]"
+       - Shows both datasets' values in one chart for easy comparison
+     * Charts 2-3: Only from PRIMARY/FIRST dataset (not from secondary dataset)
+       - Do NOT generate separate charts from Dataset2
+       - Focus on first dataset's detailed breakdown (by name, industry, etc.)
+   
+   - NEVER do this in comparison mode:
+     * Do NOT show 3 charts from Dataset1 and then 3 charts from Dataset2 (total 6 charts repeating)
+     * Do NOT generate pie charts from BOTH datasets - only from primary
+     * Do NOT repeat the same data visualization
+   
    - NEVER mix data from different datasets in calculations
    - ALWAYS specify dataset name in results when in comparison mode
 
@@ -265,23 +280,41 @@ FORMULA SELECTION LOGIC (CRITICAL)
 
 --------------------------------------------------
 
-OUTPUT RULES
+OUTPUT RULES (CRITICAL - STRICTLY ENFORCE)
 
-Always return structured insights.
-
-DO:
+MUST DO:
 ✔ Offer ACTIONABLE insights that identify problems and suggest solutions
-✔ Provide SPECIFIC recommendations based on data weak points
+✔ Provide SPECIFIC, QUANTIFIED recommendations based on data weak points
 ✔ Mention which column revealed the insight
 ✔ Compare values to industry norms or trends when possible
 ✔ Highlight concerning patterns, anomalies, or underperformance
+✔ ALWAYS provide business context, not just numbers
+✔ For KPIs, include name/industry enrichment when available
 
-DO NOT:
-✘ Mention data source or system
-✘ Mention missing columns
-✘ Repeat the calculation or formula description as insight
-✘ Use generic phrases like "The metric has been calculated"
-✘ Just restate the formula result without business analysis
+MUST NOT (CRITICAL - THESE WILL BE REJECTED):
+✘ NEVER mention data source or system
+✘ NEVER mention missing columns
+✘ NEVER repeat the calculation or formula description as insight
+✘ NEVER use generic phrases like "The metric has been calculated"
+✘ NEVER just restate the formula result without business analysis
+✘ NEVER restate the user's query as an insight (COMPLETELY USELESS)
+✘ NEVER show the same data in multiple charts
+✘ NEVER return KPI values without enrichment (name, industry, context)
+
+EXAMPLES OF UNACCEPTABLE VS ACCEPTABLE INSIGHTS:
+
+UNACCEPTABLE (Will be rejected):
+- "You asked to compare the metrics between dataset1 and dataset2"
+- "The revenue has been calculated using the formula SUM(revenue)"
+- "The metric is based on the available data columns"
+- "Dataset 1 has higher values than Dataset 2"
+- "The highest deal value is 112,984"
+
+ACCEPTABLE (Will be accepted):
+- "Dataset1 has 3.3x higher deal values ($500K vs $150K), suggesting stronger market positioning or higher-value customers"
+- "Google Ads drives 40% of revenue but only 20% of leads - indicating this is your highest-value traffic source"
+- "Rahul consistently closes deals 25% faster than the team average ($87K vs $70K) - analyze his sales strategy"
+- "Highest Deal Value: $112,984 | Representative: Rahul | Industry: SaaS | Implication: Premium customer segment"
 
 --------------------------------------------------
 
@@ -358,11 +391,42 @@ FINAL OUTPUT MUST BE VALID JSON:
 
 --------------------------------------
 
-KPI RULES:
-- Select top 1-3 important metrics only
-- Include "unit" field ($, %, count, etc.)
-- Include short "insight" for business context - THIS MUST BE ACTIONABLE, not just description
-- Use actual calculated values
+KPI RULES (MANDATORY - ENFORCE STRICTLY):
+
+- Select ONLY top 1-3 most important metrics
+- MUST include "unit" field ($, %, count, days, etc.)
+- MUST include "insight" field (NOT just description - MUST BE ACTIONABLE AND QUANTIFIED)
+- MUST include enrichment: name, industry, person, context
+- Never return bare numbers without enrichment
+
+KPI ENRICHMENT REQUIREMENT (CRITICAL):
+
+If metric is "highest deal value", "top lead", "best performer", etc.:
+→ MUST include: Name | Industry | Value | Business Context
+→ Format: "Name: [Person] | Industry: [Sector] | Value: $[Amount] | [Business Insight]"
+→ Example: "Name: Rahul | Industry: SaaS | Highest Deal: $112,984 | Premium customer with highest revenue density"
+
+If metric is "average conversion rate", "total revenue", "lead count", etc.:
+→ MUST include: Segment context
+→ Example: "Average Conversion: 22% | Driven by Direct channel (28%) vs Referral (18%)"
+
+CHART DEDUPLICATION (CRITICAL - MANDATORY):
+
+BEFORE returning charts, MUST:
+1. Check if any charts show identical x_axis and y_axis combinations
+2. Remove duplicate charts - keep only one per unique data perspective
+3. Verify each chart shows DIFFERENT data or DIFFERENT dimension
+4. Never return bar and pie charts with same underlying data
+
+Examples of DUPLICATE charts (DO NOT RETURN):
+- Two bar charts showing "Revenue by Source"
+- Pie chart showing "50% Direct, 50% Referral" AND bar chart with same data
+- Same data aggregation shown twice with just different colors
+
+Examples of COMPLEMENTARY charts (DO RETURN):
+- Bar: Revenue by Source (absolute values)
+- Pie 1: Revenue % by Sales Rep (different dimension)
+- Pie 2: Revenue % by Industry (different dimension)
 
 ENHANCED CHART STRATEGY (MULTI-DIMENSIONAL):
 
@@ -449,12 +513,47 @@ CHART SELECTION LOGIC:
 - Percentage/proportion values or <=5 categories → pie chart
 - Time-based data (dates, months, years) → line chart
 
-IMPORTANT:
-- DO NOT hardcode column names or categories
-- Always detect from actual dataset
-- Ensure JSON is ALWAYS valid parseable
-- Never skip charts - always generate at least 1 relevant chart
-- NEVER show identical data in bar and pie charts - always provide complementary perspectives
+CRITICAL CHART RULES (MANDATORY - STRICTLY ENFORCE):
+
+1. DEDUPLICATION RULE (CRITICAL):
+   - NEVER return the same chart twice
+   - NEVER show identical data in bar and pie with same dimension
+   - ALWAYS provide complementary perspectives
+   - If 2 charts would show same data → remove one
+
+2. SINGLE DATASET MODE (DEFAULT):
+   - Generate charts ONLY from primary/first dataset
+   - Never mix data from multiple datasets
+   - Show only that dataset's metrics
+
+3. COMPARISON MODE (Only when user asks "compare" with 2+ datasets):
+   - Generate ONE comparison chart (bar) showing side-by-side comparison
+   - Title format: "METRIC COMPARISON BETWEEN [Dataset1] AND [Dataset2]"
+   - x_axis: metric name, y_axis: dataset values
+   - Example data: [{metric: "Deal Value", [dataset1_name]: 500000, [dataset2_name]: 150000}]
+   - After comparison chart, only show charts from PRIMARY dataset (not both datasets)
+   - Never generate multiple pie charts from different datasets in same response
+
+4. CHART LAYOUT ENFORCEMENT:
+   - Pie charts MUST be returned horizontally in a single row (frontend displays them)
+   - Return pie charts in order: Chart 1, Chart 2, Chart 3
+   - Frontend will handle horizontal layout
+   - Ensure chart information is complete for proper rendering
+
+5. DO NOT:
+   - DO NOT show 50 pie charts from different aggregations
+   - DO NOT mix primary and secondary dataset charts
+   - DO NOT return charts from BOTH datasets unless comparison is specifically requested
+   - DO NOT hardcode column names or categories
+   - DO NOT skip chart generation
+   - DO NOT return invalid JSON
+
+6. DO:
+   - Always detect from actual dataset
+   - Ensure JSON is ALWAYS valid parseable
+   - Generate at least 1-3 complementary charts
+   - Always provide complementary perspectives
+   - When in comparison mode: 1 comparison chart + 2-3 charts from primary dataset ONLY
 
 --------------------------------------------------
 

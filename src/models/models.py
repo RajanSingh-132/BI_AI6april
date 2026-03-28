@@ -39,7 +39,7 @@ class Message(BaseModel):
         return v
 
 
-# -----------------------------
+# --------- -------------------------
 # Chat Request Model
 # -----------------------------
 class ChatRequest(BaseModel):
@@ -58,8 +58,8 @@ class ChatRequest(BaseModel):
     )
     
     comparison_mode: Optional[bool] = Field(
-        default=None,
-        description="If True/False, force comparison/single mode. If None (default), auto-detect based on query keywords"
+        default=False,
+        description="If True, enable comparison mode between multiple datasets"
     )
 
     @validator("chat_history")
@@ -126,7 +126,7 @@ class ChatResponse(BaseModel):
 
 # -----------------------------
 # Health Check Model
-# -----------------------------
+# --------- -------- --------
 class HealthResponse(BaseModel):
     """
     Health check response.
@@ -142,48 +142,19 @@ class HealthResponse(BaseModel):
     )
 
 
-# -----------------------------
+# --------- -------- --------
 # Retrieval Context
-# -----------------------------
+# --------- -------- --------
 class RetrievalContext(BaseModel):
     """
     Internal retrieval result structure.
     """
 
-    chunks: List[str] = Field(
-        default_factory=list,
-        description="Retrieved text chunks"
-    )
+    query: str = Field(..., description="Original query")
 
-    provenance: List[Dict[str, Any]] = Field(
-        default_factory=list,
-        description="Metadata of sources"
-    )
+    documents: List[str] = Field(..., description="Retrieved documents")
 
-    score_threshold_met: bool = Field(
-        default=False,
-        description="Whether similarity threshold was met"
-    )
-
-
-# -----------------------------
-# Intent Detection Result
-# -----------------------------
-class IntentResult(BaseModel):
-    """
-    Intent detection result.
-    """
-
-    intent_type: Literal["greeting", "continuation", "query"] = Field(
-        default="query"
-    )
-
-    is_continuation: bool = Field(default=False)
-
-    is_greeting: bool = Field(default=False)
-
-    confidence: float = Field(
-        default=1.0,
-        ge=0.0,
-        le=1.0
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Retrieval metadata"
     )

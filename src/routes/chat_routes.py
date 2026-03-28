@@ -1,8 +1,15 @@
+import sys
+import os
+
+# Add parent directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from fastapi import APIRouter, HTTPException, Request
 from models import ChatRequest
 from utils.request_tracker import tracker
 from services.conversationsSaver import get_chat_history
 from services.ai_services import generate_ai_response
+
 router = APIRouter()
 
 
@@ -30,15 +37,7 @@ async def chat(req: ChatRequest, request: Request):
 
         # ✅ Extract active datasets from request or fallback to app state
         active_datasets = req.active_datasets or getattr(request.app.state, 'ACTIVE_DATASETS', [])
-        
-        # ✅ AUTO-DETECT: Comparison mode based on query keywords + multiple datasets
-        comparison_keywords = ['compare', 'vs', 'versus', 'between', 'differences', 'contrast', 'which one']
-        query_lower = user_message.lower()
-        has_comparison_keyword = any(kw in query_lower for kw in comparison_keywords)
-        auto_comparison_mode = has_comparison_keyword and len(active_datasets) > 1
-        
-        # ✅ Use auto-detected mode (can still be overridden by explicit request flag)
-        comparison_mode = req.comparison_mode if req.comparison_mode is not None else auto_comparison_mode
+        comparison_mode = req.comparison_mode or False
         
         # ✅ ONLY THIS - pass request so ai_services can access app state and multiple datasets
         result = generate_ai_response(

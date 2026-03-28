@@ -157,10 +157,6 @@ User Query:
 {message}
 """
 
-User Query:
-{message}
-"""
-
         try:
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
@@ -221,6 +217,32 @@ User Query:
             final_charts = parsed.get("charts", [])
 
             print("FINAL ANSWER:", answer)
+            
+            # ----------------------------
+            # 🔥 EXTRACT ENRICHMENT DATA FROM KPIs
+            # ----------------------------
+            # Parse enrichment (Name, Industry, Context) from insight text
+            import re as regex_module
+            enriched_kpis = []
+            for kpi in final_kpis:
+                enriched_kpi = kpi.copy()
+                insight = kpi.get("insight", "")
+                
+                # Extract Name | Industry | Context from insight
+                name_match = regex_module.search(r'Name:\s*([^|]+)', insight)
+                industry_match = regex_module.search(r'Industry:\s*([^|]+)', insight)
+                context_match = regex_module.search(r'\|([^|]+)$', insight)  # Last segment
+                
+                if name_match:
+                    enriched_kpi["name_enrichment"] = name_match.group(1).strip()
+                if industry_match:
+                    enriched_kpi["industry_enrichment"] = industry_match.group(1).strip()
+                if context_match:
+                    enriched_kpi["context_enrichment"] = context_match.group(1).strip()
+                
+                enriched_kpis.append(enriched_kpi)
+            
+            final_kpis = enriched_kpis
 
             # ----------------------------
             # 🔥 SAVE RESULT
