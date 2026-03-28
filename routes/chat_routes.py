@@ -28,8 +28,19 @@ async def chat(req: ChatRequest, request: Request):
                 "charts": []
             }
 
-        # ✅ ONLY THIS - pass request so ai_services can access app state
-        result = generate_ai_response(user_id, user_message, history, request)
+        # ✅ Extract active datasets from request or fallback to app state
+        active_datasets = req.active_datasets or getattr(request.app.state, 'ACTIVE_DATASETS', [])
+        comparison_mode = req.comparison_mode or False
+        
+        # ✅ ONLY THIS - pass request so ai_services can access app state and multiple datasets
+        result = generate_ai_response(
+            user_id, 
+            user_message, 
+            history, 
+            request,
+            active_datasets=active_datasets,
+            comparison_mode=comparison_mode
+        )
 
         return result
 

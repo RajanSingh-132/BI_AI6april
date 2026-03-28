@@ -51,6 +51,16 @@ class ChatRequest(BaseModel):
         ...,
         description="Full conversation history"
     )
+    
+    active_datasets: Optional[List[str]] = Field(
+        default=None,
+        description="List of active dataset file names for multi-dataset support"
+    )
+    
+    comparison_mode: Optional[bool] = Field(
+        default=False,
+        description="If True, enable comparison mode between multiple datasets"
+    )
 
     @validator("chat_history")
     def validate_history(cls, v):

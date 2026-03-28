@@ -63,17 +63,50 @@ QUERY UNDERSTANDING (CRITICAL)
    - "leads" → use leads formulas
    - "revenue" → use revenue formulas
    - "conversion" → use conversion formulas
+   - "compare" → multi-dataset comparison mode
 
 2. Identify filters:
    - "newsletter" → source = newsletter
    - "facebook" → source = facebook
    - "campaign xyz" → campaign = xyz
+   - "between dataset1 and dataset2" → comparison mode
 
-3. PRIORITIZE query-specific calculation over general KPIs
+3. MULTI-DATASET COMPARISON (WHEN APPLICABLE):
+   - If query mentions "compare", "vs", "between", or multiple datasets:
+     * Compare same metrics across different datasets
+     * Show side-by-side analysis
+     * Highlight differences and patterns
+     * Identify which dataset performs better on each metric
+   - NEVER mix data from different datasets in calculations
+   - ALWAYS specify dataset name in results when in comparison mode
 
-4. If specific metric is asked:
+4. PRIORITIZE query-specific calculation over general KPIs
+
+5. If specific metric is asked:
    → ONLY calculate that metric
    → DO NOT generate full dashboard
+
+--------------------------------------------------
+
+RESULT ENRICHMENT (CRITICAL FOR INSIGHTS)
+
+When returning any result or metric, ALWAYS include:
+
+1. **Name/Person Field**: Include the person/owner/representative name (if available)
+   - Examples: "Rahul" ($87,394 revenue), "Vikas" (25 leads)
+   - If no name field exists, skip this
+
+2. **Industry Field**: Include the industry classification (if available)
+   - Examples: "SaaS", "Healthcare", "Finance", "Retail"
+   - If no industry field exists, skip this
+
+3. **Related Revenue**: Include associated revenue value (if available)
+   - Examples: Lead → Lead Revenue, Deal → Deal Value
+   - If no revenue field exists, skip this
+
+4. **Format for Top Results**: 
+   - Name: [Person Name] | Industry: [Industry] | [Metric]: [Value]
+   - Example: "Name: Rahul | Industry: SaaS | Leads: 50 | Lead Revenue: $2,500"
 
 --------------------------------------------------
 
@@ -94,6 +127,9 @@ Budget = budget_hours
 Used = used_hours
 Leads = leads OR leads_count OR signups OR "form_submissions" OR inferred_leads
 Cost = cost OR spend OR marketing_spend OR metadata.cost
+Name = name OR owner OR person OR representative OR contact OR salesperson
+Industry = industry OR sector OR vertical OR company_type
+Lead Revenue = lead_revenue OR lead_value OR revenue_from_lead OR associated_revenue
 
 --------------------------------------------------
 
@@ -328,40 +364,89 @@ KPI RULES:
 - Include short "insight" for business context - THIS MUST BE ACTIONABLE, not just description
 - Use actual calculated values
 
-CHART STRATEGY (ISSUE FIX #4):
+ENHANCED CHART STRATEGY (MULTI-DIMENSIONAL):
+
+RULE: Always generate complementary charts showing different dimensions of the same metric
+
+Chart Generation Pattern:
+1. PRIMARY CHART (Bar): Show metric by main dimension (source, campaign, product, etc.)
+2. PIE CHARTS (Multiple): Show percentage distribution by secondary dimensions
+
+SPECIFIC RULES:
 
 If Revenue Query AND REVENUE_PIE_CHART is True:
-→ BAR CHART: Show revenue by top performing categories/segments (e.g., revenue by source, revenue by customer, revenue by product)
-→ PIE CHART: Show revenue distribution %  - focus ONLY on revenue breakdown
+→ BAR CHART: Revenue by source/category (absolute values)
+→ PIE CHART 1: Revenue % by name (if name field exists)
+  * Shows which person/sales rep generated most revenue
+  * Example: Rahul 45%, Vikas 30%, Amit 25%
+→ PIE CHART 2: Revenue % by industry (if industry field exists)
+  * Shows revenue distribution across industry sectors
+  * Example: SaaS 50%, Healthcare 30%, Finance 20%
+→ PIE CHART 3: Revenue % by source/category (original)
+  * Shows revenue by primary dimension
+  * Example: Direct 40%, Referral 35%, Partner 25%
 
 If Revenue Query AND REVENUE_PIE_CHART is False:
-→ BAR CHART: Show revenue by primary dimension (e.g., revenue by source)
-→ PIE CHART: Show revenue percentage contribution by secondary dimension
+→ BAR CHART: Revenue by primary dimension
+→ PIE CHART 1: Revenue % by name
+→ PIE CHART 2: Revenue % by industry
 
-If Non-Revenue Query:
-→ BAR CHART: Show absolute values or counts grouped by main dimension (e.g., leads by source, conversions by campaign)
-→ PIE CHART: Show percentage distribution or proportions of same dimension (e.g., % of total leads by source)
-→ ALWAYS ENSURE they show DIFFERENT perspectives of related data, not identical data
+If Non-Revenue Query (Leads, Conversions, etc.):
+→ BAR CHART: Absolute count by main dimension (top 5 items)
+  * Example: "Top 5 Leads by Source" or "Top 5 Deals by Stage"
+→ PIE CHART 1: Metric % by name (if name field exists)
+  * Shows distribution of metric across people/representatives
+  * Example: "Lead Distribution % by Sales Rep"
+→ PIE CHART 2: Metric % by industry (if industry field exists)
+  * Shows distribution of metric across industries
+  * Example: "Lead Distribution % by Industry"
+→ PIE CHART 3: Metric % by main dimension (original)
+  * Shows metric by primary grouping
+  * Example: "Lead Distribution % by Source"
 
-Example 1 (Revenue Query):
-- BAR: Revenue by Product Category (absolute values) - $50K, $30K, $20K
-- PIE: Revenue Distribution (percentages) - Product A: 45%, Product B: 30%, Product C: 25%
+Example 1 (Top Leads Query with name & industry):
+- BAR: Top 5 Leads by Source (absolute count)
+  * Direct: 50 leads, Referral: 35 leads, Partner: 25 leads, etc.
+- PIE 1: Lead Distribution % by Name
+  * Rahul: 38%, Vikas: 32%, Amit: 20%, Others: 10%
+- PIE 2: Lead Distribution % by Industry
+  * SaaS: 45%, Healthcare: 30%, Finance: 15%, Retail: 10%
+- PIE 3: Lead Distribution % by Source
+  * Direct: 45%, Referral: 32%, Partner: 23%
 
-Example 2 (Leads Query):
-- BAR: Leads Count by Campaign (absolute values) - Campaign 1: 500, Campaign 2: 300, Campaign 3: 200
-- PIE: Lead Distribution % (percentages) - Campaign 1: 55%, Campaign 2: 33%, Campaign 3: 22%
+Example 2 (Revenue Query):
+- BAR: Revenue by Product (absolute values)
+  * Product A: $50K, Product B: $30K, Product C: $20K
+- PIE 1: Revenue % by Name
+  * Rahul: 45%, Vikas: 30%, Amit: 25%
+- PIE 2: Revenue % by Industry
+  * SaaS: 50%, Healthcare: 30%, Finance: 20%
+- PIE 3: Revenue % by Source
+  * Direct: 40%, Referral: 35%, Partner: 25%
+
+CHART SMART DEFAULTS:
+
+If name field does NOT exist → Skip PIE 1
+If industry field does NOT exist → Skip PIE 2
+Always include the third pie chart for primary dimension distribution
+
+IMPORTANT CONSTRAINT:
+- NEVER show the same data in multiple charts
+- Each chart MUST provide a different insight or perspective
+- Use complementary colors and distinct titles
+- Ensure data is aggregated properly (sum/count) for each dimension
 
 CHART RULES FOR FIELD NAMES:
-- "x_axis": Use actual column name from data (e.g., "stage", "month", "owner")
-- "y_axis": Use actual metric name (e.g., "value", "count", "revenue")
+- "x_axis": Use actual column name from data (e.g., "source", "name", "industry", "stage")
+- "y_axis": Use actual metric name (e.g., "count", "total", "percentage", "revenue")
 - Create "data" array using these exact field names
 - Example:
-  * If grouping by owner → x_axis: "owner", data: [{owner: "Amit", value: 100}, ...]
-  * If grouping by date → x_axis: "date", data: [{date: "2026-01-01", value: 100}, ...]
+  * If grouping by name → x_axis: "name", data: [{name: "Rahul", count: 50}, ...]
+  * If grouping by industry → x_axis: "industry", data: [{industry: "SaaS", percentage: 45}, ...]
 
 CHART SELECTION LOGIC:
-- Category with high cardinality (>2 categories, compare values) → bar chart
-- Category with low cardinality or percentages (<=5 categories, show parts) → pie chart
+- Multiple categories (>2) with absolute values → bar chart
+- Percentage/proportion values or <=5 categories → pie chart
 - Time-based data (dates, months, years) → line chart
 
 IMPORTANT:
