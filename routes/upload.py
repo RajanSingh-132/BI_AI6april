@@ -4,6 +4,7 @@ from typing import List
 
 from semanticstore import process_dataset
 from embeddingclient import BedrockEmbeddingClient
+from data_relationships import relationship_manager
 
 router = APIRouter()
 
@@ -131,7 +132,7 @@ async def upload_json(request: Request):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=5000, detail=str(e))
 
 
 @router.post("/upload-multiple-json")
@@ -240,13 +241,22 @@ async def upload_multiple_json(request: Request):
         print(f"✅ MULTIPLE FILES PROCESSED")
         print(f"   Total datasets: {len(ACTIVE_DATASETS)}")
         print(f"   Active datasets: {ACTIVE_DATASETS}")
+        
+        # 🔥 BUILD RELATIONSHIP GRAPH FOR MULTI-FILE ANALYSIS
+        if len(ACTIVE_DATASETS) > 1:
+            print(f"\n🔗 DISCOVERING RELATIONSHIPS BETWEEN FILES...")
+            relationships = relationship_manager.build_relationship_graph(ACTIVE_DATASETS)
+            print(f"   Shared columns: {relationships.get('shared_columns', {})}")
+            print(f"   Relationship graph built successfully!")
+        
         print(f"{'='*70}\n")
         
         return {
             "status": "success",
             "message": "Multiple files processed successfully ✅",
             "results": results,
-            "active_datasets": ACTIVE_DATASETS
+            "active_datasets": ACTIVE_DATASETS,
+            "relationships": relationship_manager.get_relationships() if len(ACTIVE_DATASETS) > 1 else None
         }
         
     except Exception as e:

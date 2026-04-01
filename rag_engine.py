@@ -37,7 +37,7 @@ class RAGEngine:
 
         words = query.lower().split()
 
-        docs = list(self.collection.find().limit(50))
+        docs = list(self.collection.find())
 
         for doc in docs:
             data = doc.get("data", {})
@@ -135,7 +135,7 @@ class RAGEngine:
             # 🔥 STEP 3: BUILD PROMPT
             # =========================================================
             context_text = "\n\n".join(chunks)
-            structured_json = json.dumps(structured_data[:50], indent=2)
+            structured_json = json.dumps(structured_data[:5000], indent=2)
 
             prompt = f"""
 {SYSTEM_PROMPT}
