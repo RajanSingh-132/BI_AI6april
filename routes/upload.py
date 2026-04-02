@@ -12,6 +12,39 @@ router = APIRouter()
 ACTIVE_DATASET = None
 ACTIVE_DATASETS = []  # List of all active datasets
 
+
+def _set_active_datasets(request: Request, db, datasets: List[str]):
+    """
+    Replace the active working set with the current upload selection.
+    Stored datasets remain in MongoDB, but chat defaults to only this batch.
+    """
+    global ACTIVE_DATASET, ACTIVE_DATASETS
+
+    deduped = []
+    for dataset_name in datasets:
+        if dataset_name and dataset_name not in deduped:
+            deduped.append(dataset_name)
+
+    ACTIVE_DATASETS = deduped
+    ACTIVE_DATASET = ACTIVE_DATASETS[-1] if ACTIVE_DATASETS else None
+
+    request.app.state.ACTIVE_DATASET = ACTIVE_DATASET
+    request.app.state.ACTIVE_DATASETS = ACTIVE_DATASETS
+
+    timestamp = datetime.utcnow()
+
+    db["metadata"].update_one(
+        {"_id": "active_dataset"},
+        {"$set": {"value": ACTIVE_DATASET, "timestamp": timestamp}},
+        upsert=True
+    )
+
+    db["metadata"].update_one(
+        {"_id": "active_datasets"},
+        {"$set": {"value": ACTIVE_DATASETS, "timestamp": timestamp}},
+        upsert=True
+    )
+
 @router.post("/upload-json")
 async def upload_json(request: Request):
 
@@ -43,43 +76,20 @@ async def upload_json(request: Request):
             print(f"⚠️  DATASET ALREADY EXISTS: {file_name}")
             print(f"   Skipping re-embedding and returning existing dataset")
             print(f"{'='*70}\n")
-            
-            # Add to active datasets list
-            if file_name not in ACTIVE_DATASETS:
-                ACTIVE_DATASETS.append(file_name)
-            
-            ACTIVE_DATASET = file_name
-            request.app.state.ACTIVE_DATASET = file_name
-            request.app.state.ACTIVE_DATASETS = ACTIVE_DATASETS
+
+            _set_active_datasets(request, db, [file_name])
             
             return {
                 "status": "success",
                 "message": "LOOKS LIKE YOU ALREADY HAVE THIS DATASET UPLOADED AND WE HAVE FETCHED IT FOR YOU IN THIS CHAT! ✅",
                 "file_name": file_name,
                 "rows": existing_doc.get("rows", 0),
+                "active_datasets": ACTIVE_DATASETS,
                 "from_cache": True
             }
 
         # ✅ SET ACTIVE DATASET - EVERYWHERE
-        ACTIVE_DATASET = file_name
-        if file_name not in ACTIVE_DATASETS:
-            ACTIVE_DATASETS.append(file_name)
-            
-        request.app.state.ACTIVE_DATASET = file_name
-        request.app.state.ACTIVE_DATASETS = ACTIVE_DATASETS
-        
-        # ✅ ALSO SAVE TO MONGODB AS METADATA
-        db["metadata"].update_one(
-            {"_id": "active_dataset"},
-            {"$set": {"value": file_name, "timestamp": __import__('datetime').datetime.utcnow()}},
-            upsert=True
-        )
-        
-        db["metadata"].update_one(
-            {"_id": "active_datasets"},
-            {"$set": {"value": ACTIVE_DATASETS, "timestamp": __import__('datetime').datetime.utcnow()}},
-            upsert=True
-        )
+        _set_active_datasets(request, db, [file_name])
         
         print(f"\n{'='*70}")
         print(f"🎯 SET ACTIVE DATASET: {file_name}")
@@ -152,6 +162,7 @@ async def upload_multiple_json(request: Request):
             raise HTTPException(status_code=400, detail="No files provided")
 
         results = []
+        active_batch = []
         
         for file_data in files:
             file_name = file_data.get("file_name")
@@ -172,8 +183,8 @@ async def upload_multiple_json(request: Request):
             })
             
             if existing_doc:
-                if file_name not in ACTIVE_DATASETS:
-                    ACTIVE_DATASETS.append(file_name)
+                if file_name not in active_batch:
+                    active_batch.append(file_name)
                 results.append({
                     "file_name": file_name,
                     "status": "success",
@@ -205,8 +216,8 @@ async def upload_multiple_json(request: Request):
             
             db["documents"].insert_one(document)
             
-            if file_name not in ACTIVE_DATASETS:
-                ACTIVE_DATASETS.append(file_name)
+            if file_name not in active_batch:
+                active_batch.append(file_name)
             
             embedding_client = BedrockEmbeddingClient()
             process_dataset(
@@ -224,18 +235,8 @@ async def upload_multiple_json(request: Request):
                 "from_cache": False
             })
         
-        # Update global state
-        ACTIVE_DATASET = ACTIVE_DATASETS[-1] if ACTIVE_DATASETS else None
-        request.app.state.ACTIVE_DATASETS = ACTIVE_DATASETS
-        request.app.state.ACTIVE_DATASET = ACTIVE_DATASET
-        
-        # Save to MongoDB
-        if ACTIVE_DATASETS:
-            db["metadata"].update_one(
-                {"_id": "active_datasets"},
-                {"$set": {"value": ACTIVE_DATASETS, "timestamp": __import__('datetime').datetime.utcnow()}},
-                upsert=True
-            )
+        # Update global state for this upload batch only
+        _set_active_datasets(request, db, active_batch)
         
         print(f"\n{'='*70}")
         print(f"✅ MULTIPLE FILES PROCESSED")

@@ -6,6 +6,15 @@ from services.ai_services import generate_ai_response
 router = APIRouter()
 
 
+def _is_upload_event_message(message: str) -> bool:
+    normalized = (message or "").strip().lower()
+    return (
+        normalized.startswith("file uploaded")
+        or "file uploaded successfully" in normalized
+        or normalized.startswith("uploaded file:")
+    )
+
+
 @router.post("/chat")
 async def chat(req: ChatRequest, request: Request):
 
@@ -20,12 +29,20 @@ async def chat(req: ChatRequest, request: Request):
 
         history = get_chat_history(user_id)
 
-        # ✅ File upload case
-        if "file uploaded" in user_message.lower():
+        # Treat upload acknowledgements as system events, not analytics queries.
+        if _is_upload_event_message(user_message):
             return {
-                "answer": "File uploaded successfully ✅\n\n👉 Now ask your question from the dataset.",
+                "answer": "",
+                "answer_html": "",
                 "kpis": [],
-                "charts": []
+                "charts": [],
+                "type": "system",
+                "skip_analytics": True,
+                "skip_history": True,
+                "is_upload_event": True,
+                "datasets_used": req.active_datasets or getattr(request.app.state, 'ACTIVE_DATASETS', []),
+                "comparison_mode": False,
+                "ai_intelligence_analysis": []
             }
 
         # ✅ Extract active datasets from request or fallback to app state

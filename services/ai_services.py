@@ -71,15 +71,36 @@ def format_indian_number(value):
 def format_rupee_kpi_value(kpi):
     """
     Apply Indian number formatting only to rupee KPI values.
+    Handles both ₹ (U+20B9) and mojibake variant â‚¹ to be encoding-safe.
     """
     if not isinstance(kpi, dict):
         return kpi
 
     formatted_kpi = kpi.copy()
-    if formatted_kpi.get("unit") == "₹":
+    unit = str(formatted_kpi.get("unit", ""))
+    if unit in {"\u20b9", "â‚¹", "₹"}:
         formatted_kpi["value"] = format_indian_number(formatted_kpi.get("value"))
 
     return formatted_kpi
+
+
+SAFE_HTML_TAG_PATTERN = re.compile(
+    r"</?(p|strong|ul|ol|li|em|code|table|thead|tbody|tfoot|tr|th|td|div|br)\b",
+    re.IGNORECASE
+)
+
+
+def _decode_nested_html_entities(text: str, rounds: int = 3) -> str:
+    """
+    Decode model output that may contain escaped HTML such as &lt;p&gt;... .
+    """
+    decoded = text
+    for _ in range(rounds):
+        next_text = html.unescape(decoded)
+        if next_text == decoded:
+            break
+        decoded = next_text
+    return decoded
 
 
 def format_answer_html(answer: str) -> str:
@@ -90,8 +111,16 @@ def format_answer_html(answer: str) -> str:
         return ""
 
     answer = answer.replace("\r\n", "\n").replace("\r", "\n").strip()
+    answer = _decode_nested_html_entities(answer)
+    answer = re.sub(r"^\s*FINAL ANSWER:\s*", "", answer, flags=re.IGNORECASE).strip()
+    answer = re.sub(
+        r"<p>\s*<strong>\s*</strong>\s*</p>",
+        "",
+        answer,
+        flags=re.IGNORECASE
+    ).strip()
 
-    if re.search(r"</?(p|ul|li|strong|em|table|thead|tbody|tr|td|th|div|br)\b", answer, re.IGNORECASE):
+    if SAFE_HTML_TAG_PATTERN.search(answer):
         return answer
 
     lines = [line.strip() for line in answer.split("\n") if line.strip()]
@@ -303,22 +332,155 @@ def extract_response_payload(raw_text: str):
     return None
 
 
-def format_rupee_kpi_value(kpi):
+# ----------------------------
+# ✅ FIX 1: ARITHMETIC VERIFICATION
+# Recomputes totals from the LLM's own row-level breakdown
+# (computation_plan / verification_plan) and fixes mismatches
+# before the result reaches the frontend or cache.
+# Also patches the answer HTML so the displayed text matches
+# the corrected value (previously the HTML was left unchanged).
+# ----------------------------
+def verify_and_fix_computation_plan(parsed: dict) -> dict:
     """
-    Apply Indian number formatting only to rupee KPI values.
-    This late definition intentionally overrides the earlier helper
-    so runtime behavior is consistent even if the source file had
-    encoding noise around the rupee symbol.
+    If the model included a computation_plan or verification_plan with
+    rows + expected_total, recompute the sum from the rows and override
+    the plan total if there is a mismatch.
+
+    Also patches any KPI whose value string matches the wrong total AND
+    patches the answer HTML / plain-text answer so the displayed number
+    matches the corrected value.
     """
-    if not isinstance(kpi, dict):
-        return kpi
+    plan = parsed.get("computation_plan") or parsed.get("verification_plan")
+    if not plan or not isinstance(plan, dict):
+        return parsed
 
-    formatted_kpi = kpi.copy()
-    unit = str(formatted_kpi.get("unit", ""))
-    if unit in {"\u20b9", "â‚¹"}:
-        formatted_kpi["value"] = format_indian_number(formatted_kpi.get("value"))
+    rows = plan.get("rows", [])
+    reported_total = plan.get("expected_total")
 
-    return formatted_kpi
+    if not rows or reported_total is None:
+        return parsed
+
+    try:
+        reported_total = float(reported_total)
+    except (TypeError, ValueError):
+        return parsed
+
+    computed = round(sum(float(row.get("value", 0)) for row in rows), 2)
+
+    if abs(computed - reported_total) > 0.01:
+        print(
+            f"⚠️  ARITHMETIC MISMATCH DETECTED: "
+            f"LLM reported {reported_total}, row-sum={computed}. "
+            f"Overriding with correct value."
+        )
+        plan["expected_total"] = computed
+        plan["mismatch_detected"] = True
+        plan["original_reported_total"] = reported_total
+
+        if "computation_plan" in parsed:
+            parsed["computation_plan"] = plan
+        else:
+            parsed["verification_plan"] = plan
+
+        # ── Patch KPI tiles that carry the wrong total ──────────────
+        kpis = parsed.get("kpis", [])
+        for kpi in kpis:
+            raw_val = kpi.get("value")
+            if raw_val is None:
+                continue
+            try:
+                kpi_num = float(str(raw_val).replace(",", ""))
+                if abs(kpi_num - reported_total) < 0.5:
+                    kpi["value"] = computed
+                    kpi["value_corrected"] = True
+                    print(
+                        f"   KPI '{kpi.get('name', '?')}' corrected: "
+                        f"{reported_total} → {computed}"
+                    )
+            except (TypeError, ValueError):
+                continue
+
+        parsed["kpis"] = kpis
+
+        # ── FIX: Patch answer HTML so displayed text shows corrected value ──
+        # Replace the wrong number in the answer string so the frontend
+        # does not show the stale incorrect figure.
+        answer_html = parsed.get("answer", "")
+        if answer_html:
+            wrong_str_variants = [
+                str(int(reported_total)) if reported_total == int(reported_total) else str(reported_total),
+                format_indian_number(str(int(reported_total) if reported_total == int(reported_total) else reported_total)),
+                f"{reported_total:,.2f}",
+                f"{reported_total:,.0f}",
+            ]
+            correct_str = format_indian_number(
+                str(int(computed) if computed == int(computed) else computed)
+            )
+            for wrong_str in wrong_str_variants:
+                if wrong_str and wrong_str in answer_html:
+                    answer_html = answer_html.replace(wrong_str, correct_str)
+                    print(f"   Answer HTML patched: '{wrong_str}' → '{correct_str}'")
+                    break
+            parsed["answer"] = answer_html
+
+    else:
+        print(f"✅ Arithmetic verified: {computed} matches reported {reported_total}")
+
+    return parsed
+
+
+# ----------------------------
+# ✅ FIX 2: DEAD-BUCKET GUARD
+# The prompt.py REVENUE FILTER RULE says DEAD rows must NEVER appear
+# in any revenue total. This guard scans the computation_plan rows and
+# removes any DEAD bucket rows, then recalculates.
+# ----------------------------
+def remove_dead_bucket_rows(parsed: dict) -> dict:
+    """
+    Scan computation_plan rows. If any row carries bucket=DEAD
+    (or semantically equivalent), remove it and recalculate expected_total.
+    """
+    plan = parsed.get("computation_plan") or parsed.get("verification_plan")
+    if not plan or not isinstance(plan, dict):
+        return parsed
+
+    rows = plan.get("rows", [])
+    if not rows:
+        return parsed
+
+    dead_keywords = {"dead", "lost", "closed lost", "dropped", "rejected",
+                     "cancelled", "disqualified", "failed", "inactive",
+                     "churned", "expired", "withdrawn", "junk", "invalid"}
+
+    clean_rows = []
+    removed = []
+    for row in rows:
+        bucket = str(row.get("bucket", "")).strip().lower()
+        status = str(row.get("status", "")).strip().lower()
+        if bucket == "dead" or any(kw in status for kw in dead_keywords):
+            removed.append(row)
+        else:
+            clean_rows.append(row)
+
+    if removed:
+        dead_total = round(sum(float(r.get("value", 0)) for r in removed), 2)
+        print(
+            f"⚠️  DEAD BUCKET GUARD: Removed {len(removed)} dead row(s) "
+            f"totalling {dead_total} from computation plan."
+        )
+        plan["rows"] = clean_rows
+        plan["expected_total"] = round(
+            sum(float(r.get("value", 0)) for r in clean_rows), 2
+        )
+        plan["dead_rows_removed"] = len(removed)
+        plan["dead_rows_value"] = dead_total
+
+        if "computation_plan" in parsed:
+            parsed["computation_plan"] = plan
+        else:
+            parsed["verification_plan"] = plan
+
+    return parsed
 
 
 # ----------------------------
@@ -332,14 +494,14 @@ def fetch_data(dataset):
 
     db = mongo_client.db
     collection = db["documents"]
-    
+
     print(f"🔍 FETCH_DATA: Looking for dataset '{dataset}'")
 
     result = collection.find_one({
         "type": "dataset",
         "file_name": dataset
     })
-    
+
     if result:
         data = result.get("data", [])
         print(f"✅ FETCH_DATA: Found dataset with {len(data)} rows")
@@ -350,17 +512,46 @@ def fetch_data(dataset):
 
 
 # ----------------------------
+# ✅ FIX 3: BUILD DATASET CONTEXT WITH ROW COUNT HEADER
+# Previously the prompt passed data[:500] with no indication of the
+# total row count.  The model had no way to know it was seeing a slice,
+# so it claimed to have analysed all rows when it hadn't.
+# Now we prepend a header line stating total rows and shown rows so the
+# model (and its TOTAL ROW COUNT RULE in the system prompt) can be honest.
+# ----------------------------
+def build_dataset_context(dataset_configs: list, max_rows_per_dataset: int = 500) -> str:
+    """
+    Build the dataset context string that is injected into the prompt.
+    Each dataset block is prefixed with:
+      Total rows in dataset: N | Showing rows: M
+    so the model knows when it is only seeing a slice.
+    """
+    dataset_context = ""
+    for config in dataset_configs:
+        total_rows = len(config["data"])
+        slice_data = config["data"][:max_rows_per_dataset]
+        shown_rows = len(slice_data)
+
+        dataset_json = json.dumps(slice_data, indent=2)
+        dataset_context += (
+            f"\n\nDataset: {config['name']}\n"
+            f"Total rows in dataset: {total_rows} | Showing rows: {shown_rows}\n"
+            f"{dataset_json}"
+        )
+    return dataset_context
+
+
+# ----------------------------
 # MAIN FUNCTION
 # ----------------------------
 def generate_ai_response(user_id: str, message: str, history=None, request=None, active_datasets=None, comparison_mode=False) -> dict:
 
     query = message.lower().strip()
-    
+
     # ✅ GET ACTIVE DATASETS
     datasets = active_datasets or []
-    
+
     if not datasets:
-        # PRIMARY: Get datasets from MongoDB metadata (most reliable)
         try:
             metadata = mongo_client.db["metadata"].find_one({"_id": "active_datasets"})
             if metadata:
@@ -368,55 +559,51 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
                 print(f"📍 Got datasets from MongoDB metadata: {datasets}")
         except Exception as e:
             print(f"⚠️  Could not read from MongoDB metadata: {e}")
-    
+
     if not datasets and request and hasattr(request.app.state, 'ACTIVE_DATASETS'):
         datasets = request.app.state.ACTIVE_DATASETS
         print(f"📍 Got datasets from app.state: {datasets}")
-    
+
     if not datasets:
         datasets = upload_module.ACTIVE_DATASETS if hasattr(upload_module, 'ACTIVE_DATASETS') else []
         print(f"📍 Got datasets from module: {datasets}")
-    
-    # Use primary dataset if available, or first in list
+
     primary_dataset = datasets[0] if datasets else None
-    
+
     print(f"ACTIVE DATASETS: {datasets}")
     print(f"PRIMARY DATASET: {primary_dataset}")
     print(f"COMPARISON MODE: {comparison_mode}")
-    print(f"🎯 Processing query: {query[:60]}...")
-    
+    print(f"🎯 Processing query: {query[:500]}...")
+
     # ----------------------------
     # 🔥 DETECT MULTI-FILE QUERIES
     # ----------------------------
     is_multi_file = multi_file_processor.is_multi_file_query(query, datasets or [])
     multi_file_context = None
-    
+
     if is_multi_file and len(datasets) > 1:
         print("\n" + "🔗"*25)
         print("🔗 MULTI-FILE QUERY DETECTED")
-        
-        # Get relationship metadata
+
         relationships = relationship_manager.get_relationships()
-        
-        # Identify relevant datasets for this query
+
         relevant_datasets = multi_file_processor.identify_relevant_datasets(
             query, datasets, relationships
         )
         print(f"   Relevant datasets: {relevant_datasets}")
-        
-        # Build analysis context
+
         fetched_data_for_context = {
             dname: fetch_data(dname) for dname in relevant_datasets
         }
-        
+
         multi_file_context = multi_file_processor.build_analysis_context(
             query, relevant_datasets, relationships, fetched_data_for_context
         )
-        
+
         print(f"   Query type: {multi_file_context.get('query_type')}")
         print(f"   Shared columns: {multi_file_context.get('shared_columns')}")
         print("🔗"*25 + "\n")
-    
+
     # ----------------------------
     # CACHE CHECK (single dataset only)
     # ----------------------------
@@ -424,25 +611,29 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
         cached = mongo_client.get_cached_result(primary_dataset, query)
 
         if cached:
-            print("✅ Returning cached result")
-            cached_answer_html = cached.get("answer_html")
-            if not cached_answer_html:
-                cached_answer_html = format_answer_html(cached.get("answer", ""))
-            return {
-                "answer": html_to_display_text(cached_answer_html),
-                "answer_html": cached_answer_html,
-                "kpis": [format_rupee_kpi_value(kpi) for kpi in cached.get("kpis", [])],
-                "charts": cached["charts"],
-                "ai_intelligence_analysis": cached.get("ai_intelligence_analysis", []),  # 🎯 Include cached insights
-                "comparison_mode": cached.get("comparison_mode", False),
-                "datasets_used": cached.get("datasets", [])
-            }
+            # ✅ Only serve cache entries that passed verification
+            if cached.get("arithmetic_verified") is False:
+                print("⚠️  Cached result failed verification — skipping cache, recalculating.")
+            else:
+                print("✅ Returning cached result")
+                cached_answer_html = cached.get("answer_html")
+                if not cached_answer_html:
+                    cached_answer_html = format_answer_html(cached.get("answer", ""))
+                return {
+                    "answer": html_to_display_text(cached_answer_html),
+                    "answer_html": cached_answer_html,
+                    "kpis": [format_rupee_kpi_value(kpi) for kpi in cached.get("kpis", [])],
+                    "charts": cached["charts"],
+                    "ai_intelligence_analysis": cached.get("ai_intelligence_analysis", []),
+                    "comparison_mode": cached.get("comparison_mode", False),
+                    "datasets_used": cached.get("datasets", [])
+                }
 
     # ----------------------------
     # FETCH DATA
     # ----------------------------
     dataset_configs = []
-    
+
     for dataset_name in datasets:
         data = fetch_data(dataset_name)
         print(f"📊 Fetched {len(data)} data rows from dataset: {dataset_name}")
@@ -451,7 +642,7 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
                 "name": dataset_name,
                 "data": data
             })
-    
+
     if not dataset_configs:
         print("⚠️  No datasets available - falling back to RAG")
     else:
@@ -465,13 +656,10 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
             print(f"   - {config['name']}: {len(config['data'])} rows")
         print("✅"*25 + "\n")
 
-        # Build dataset context
-        dataset_context = ""
-        for config in dataset_configs:
-            dataset_json = json.dumps(config['data'][:500], indent=2)
-            dataset_context += f"\n\nDataset: {config['name']}\n{dataset_json}"
+        # ✅ FIX 3: Use build_dataset_context() so the model knows
+        # the total row count and shown row count for each dataset.
+        dataset_context = build_dataset_context(dataset_configs, max_rows_per_dataset=500)
 
-        # Add comparison instructions if needed
         comparison_instruction = ""
         if comparison_mode and len(dataset_configs) > 1:
             comparison_instruction = f"""
@@ -481,10 +669,9 @@ COMPARISON MODE ENABLED:
 - Compare metrics across these datasets
 - Highlight differences and patterns
 - Specify which dataset each result comes from
-- Format: "[Dataset: {dataset_name}] Metric: Value"
+- Format: "[Dataset: {dataset_configs[0]['name']}] Metric: Value"
 """
-        
-        # 🔥 ADD MULTI-FILE CONTEXT IF APPLICABLE
+
         multi_file_instruction = ""
         if is_multi_file and multi_file_context:
             multi_file_instruction = multi_file_processor.generate_multi_file_prompt_extension(
@@ -546,39 +733,35 @@ User Query:
                     is_multi_file=is_multi_file,
                     multi_file_context=multi_file_context
                 )
-                print("❌ JSON not found")
-                return {
-                    "answer": "Invalid AI response format",
-                    "kpis": [],
-                    "charts": [],
-                    "is_multi_file_analysis": is_multi_file,
-                    "multi_file_context": multi_file_context
-                }
 
             json_str = raw_text[start:end]
 
             try:
                 parsed = load_model_json(json_str)
             except Exception as e:
+                print("❌ JSON Parse Error:", e)
                 return build_plain_text_response(
                     raw_text,
                     is_multi_file=is_multi_file,
                     multi_file_context=multi_file_context
                 )
-                print("❌ JSON Parse Error:", e)
-                return {
-                    "answer": "Error parsing AI response",
-                    "kpis": [],
-                    "charts": [],
-                    "is_multi_file_analysis": is_multi_file,
-                    "multi_file_context": multi_file_context
-                }
 
             # ----------------------------
-            # 🔥 PREPARE FINAL OUTPUT (PRESERVE HTML FOR FRONTEND)
+            # ✅ FIX 1+2: VERIFY & CLEAN COMPUTATION PLAN
+            # Run dead-bucket guard first, then arithmetic check.
+            # verify_and_fix_computation_plan now also patches answer HTML.
+            # ----------------------------
+            parsed = remove_dead_bucket_rows(parsed)
+            parsed = verify_and_fix_computation_plan(parsed)
+
+            # Track whether arithmetic passed for cache guard
+            plan = parsed.get("computation_plan") or parsed.get("verification_plan") or {}
+            arithmetic_verified = not plan.get("mismatch_detected", False)
+
+            # ----------------------------
+            # 🔥 PREPARE FINAL OUTPUT
             # ----------------------------
             answer = parsed.get("answer", "").strip()
-
             answer = answer.replace("\\n", "\n")
             answer = answer.replace("Answer:", "").strip()
             answer_html = format_answer_html(answer)
@@ -591,33 +774,28 @@ User Query:
             final_charts = parsed.get("charts", [])
 
             print("FINAL ANSWER:", answer)
-            
+
             # ----------------------------
             # 🔥 EXTRACT ENRICHMENT DATA FROM KPIs
             # ----------------------------
-            # Parse enrichment (Name, Industry, Owner, Context) from insight text
-            import re as regex_module
             enriched_kpis = []
             for kpi in final_kpis:
                 enriched_kpi = kpi.copy()
                 insight = kpi.get("insight", "")
-                
-                # Extract Name | Industry | Owner | Context from insight
-                name_match = regex_module.search(r'Name:\s*([^|]+)', insight)
-                industry_match = regex_module.search(r'Industry:\s*([^|]+)', insight)
-                owner_match = regex_module.search(r'(?:Owner|Lead Owner|Manager):\s*([^|]+)', insight)
-                
-                # Extract all pipe-separated segments for context
+
+                name_match = re.search(r'Name:\s*([^|]+)', insight)
+                industry_match = re.search(r'Industry:\s*([^|]+)', insight)
+                owner_match = re.search(r'(?:Owner|Lead Owner|Manager):\s*([^|]+)', insight)
+
                 segments = [s.strip() for s in insight.split('|')]
-                
+
                 if name_match:
                     enriched_kpi["name_field"] = name_match.group(1).strip()
                 if industry_match:
                     enriched_kpi["industry_field"] = industry_match.group(1).strip()
                 if owner_match:
                     enriched_kpi["owner_field"] = owner_match.group(1).strip()
-                
-                # Build enriched display with all fields
+
                 enrichment_parts = []
                 if name_match:
                     enrichment_parts.append(f"Name: {name_match.group(1).strip()}")
@@ -625,52 +803,49 @@ User Query:
                     enrichment_parts.append(f"Industry: {industry_match.group(1).strip()}")
                 if owner_match:
                     enrichment_parts.append(f"Owner: {owner_match.group(1).strip()}")
-                
-                # Add business context from insight
+
                 if segments:
                     for seg in segments:
                         if seg and not any(prefix in seg for prefix in ['Name:', 'Industry:', 'Owner:', 'Lead Owner:', 'Manager:']):
                             enrichment_parts.append(seg)
-                            break  # Just add the first contextual segment
-                
+                            break
+
                 enriched_kpi["enrichment_context"] = " | ".join(enrichment_parts) if enrichment_parts else ""
-                
                 enriched_kpis.append(enriched_kpi)
-            
+
             final_kpis = enriched_kpis
 
             # ----------------------------
-            # 🔥 EXTRACT & SURFACE INSIGHTS (AI Intelligence Analysis Engine)
+            # 🔥 EXTRACT & SURFACE INSIGHTS
             # ----------------------------
             ai_intelligence_analysis = []
-            for idx, kpi in enumerate(final_kpis):
+            for kpi in final_kpis:
                 insight = kpi.get("insight", "")
                 if insight:
                     ai_intelligence_analysis.append({
                         "metric": kpi.get("name", ""),
                         "value": kpi.get("value", ""),
                         "unit": kpi.get("unit", ""),
-                        "key_insight": insight,  # 🎯 Full insight
-                        "enrichment": kpi.get("enrichment_context", "")  # 🎯 Enriched display
+                        "key_insight": insight,
+                        "enrichment": kpi.get("enrichment_context", "")
                     })
 
             # ----------------------------
             # 🔥 SAVE RESULT
+            # ✅ FIX 3: Tag cache entry with arithmetic_verified flag.
             # ----------------------------
             print("\n" + "🔴"*25)
             print("SAVE CHECKPOINT 1: Checking if answer exists")
             print(f"   Answer exists: {bool(answer)}")
             print(f"   Answer length: {len(answer) if answer else 0}")
-            
+
             if answer:
                 print("\n🔴 SAVE CHECKPOINT 2: Inside save block")
                 print(f"   Primary Dataset: {primary_dataset}")
                 print(f"   All Datasets: {[c['name'] for c in dataset_configs]}")
                 print(f"   Query: {query}")
-                print(f"   Final KPIs: {final_kpis}")
-                print(f"   Final Charts: {final_charts}")
-                
-                # Save using primary dataset for caching (single or multi-dataset)
+                print(f"   Arithmetic verified: {arithmetic_verified}")
+
                 if primary_dataset:
                     save_data = {
                         "file_name": primary_dataset,
@@ -679,25 +854,23 @@ User Query:
                         "answer_html": answer_html,
                         "kpis": final_kpis,
                         "charts": final_charts,
-                        "datasets": [c['name'] for c in dataset_configs],  # Track all datasets used
+                        "datasets": [c['name'] for c in dataset_configs],
                         "comparison_mode": comparison_mode,
-                        "ai_intelligence_analysis": ai_intelligence_analysis  # 🎯 Cache insights too
+                        "ai_intelligence_analysis": ai_intelligence_analysis,
+                        "arithmetic_verified": arithmetic_verified
                     }
-                    
+
                     print(f"\n🔴 SAVE CHECKPOINT 3: Calling mongo_client.save_result()")
-                    print(f"   Data to save: {save_data}")
-                    
                     result = mongo_client.save_result(save_data)
-                    
                     print(f"\n🔴 SAVE CHECKPOINT 4: Save result returned: {result}")
-                    
+
                     if result:
                         print("✅ SAVE SUCCESSFUL")
                     else:
                         print("❌ SAVE FAILED - result was False")
             else:
                 print("\n🔴 SAVE CHECKPOINT 1 FAILED: No answer to save")
-                
+
             print("🔴"*25 + "\n")
 
             return {
@@ -707,9 +880,9 @@ User Query:
                 "charts": final_charts,
                 "datasets_used": [c['name'] for c in dataset_configs],
                 "comparison_mode": comparison_mode,
-                "ai_intelligence_analysis": ai_intelligence_analysis,  # 🎯 Prominent insights section
-                "is_multi_file_analysis": is_multi_file,  # 🔗 Flag for multi-file analysis
-                "multi_file_context": multi_file_context  # 🔗 Context for multi-file queries
+                "ai_intelligence_analysis": ai_intelligence_analysis,
+                "is_multi_file_analysis": is_multi_file,
+                "multi_file_context": multi_file_context
             }
 
         except Exception as e:
@@ -740,7 +913,7 @@ User Query:
 
         raw_text = response.text if hasattr(response, "text") else str(response)
         answer_html = format_answer_html(raw_text.strip())
-        
+
         print("💾 RAG Fallback: NOT saving to DB (no dataset)")
 
         return {
