@@ -35,7 +35,7 @@ async def chat(req: ChatRequest, request: Request):
                 "answer": "",
                 "answer_html": "",
                 "kpis": [],
-                "charts": [],
+                # "charts": [],
                 "type": "system",
                 "skip_analytics": True,
                 "skip_history": True,

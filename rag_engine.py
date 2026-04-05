@@ -1,15 +1,30 @@
 import logging
 import json
 import os
+import numpy as np
 from typing import List, Dict, Any
 from models import Message
 from rag_retriever import RAGRetriever
-from prompt import SYSTEM_PROMPT
+from prompt_re import SYSTEM_PROMPT
 from google import genai
 from mongo_client import MongoDBClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _coerce_numeric(value: Any) -> float:
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    value_str = str(value).strip().replace(",", "")
+    if not value_str:
+        return 0.0
+    try:
+        return float(value_str)
+    except ValueError:
+        return 0.0
 
 
 class RAGEngine:
@@ -78,12 +93,17 @@ class RAGEngine:
         if not field:
             return None
 
+        numeric_values = np.array([_coerce_numeric(d.get(field, 0)) for d in data], dtype=float)
+        logger.info(f"[NUMPY_LOG] rag_engine.calculate -> field={field} input_values={numeric_values.tolist()}")
+
         if "total" in query or "sum" in query:
-            total = sum(d.get(field, 0) for d in data)
+            total = float(np.sum(numeric_values))
+            logger.info(f"[NUMPY_LOG] rag_engine.calculate -> np.sum_output={total}")
             return f"Total {field} is {total}"
 
         if "average" in query:
-            avg = sum(d.get(field, 0) for d in data) / len(data)
+            avg = float(np.mean(numeric_values))
+            logger.info(f"[NUMPY_LOG] rag_engine.calculate -> np.mean_output={avg}")
             return f"Average {field} is {round(avg, 2)}"
 
         if "count" in query or "how many" in query:

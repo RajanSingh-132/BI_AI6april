@@ -1,14 +1,15 @@
-import os
+﻿import os
 import json
 import re
 import html
+import numpy as np
 from dotenv import load_dotenv
 from google import genai
 
 from mongo_client import mongo_client
 from utils.request_tracker import tracker
 from rag_retriever import RAGRetriever
-from prompt import SYSTEM_PROMPT
+from prompt_re import SYSTEM_PROMPT
 from routes import upload as upload_module
 from multi_file_queries import multi_file_processor
 from data_relationships import relationship_manager
@@ -71,14 +72,14 @@ def format_indian_number(value):
 def format_rupee_kpi_value(kpi):
     """
     Apply Indian number formatting only to rupee KPI values.
-    Handles both ₹ (U+20B9) and mojibake variant â‚¹ to be encoding-safe.
+    Handles both â‚¹ (U+20B9) and mojibake variant Ã¢â€šÂ¹ to be encoding-safe.
     """
     if not isinstance(kpi, dict):
         return kpi
 
     formatted_kpi = kpi.copy()
     unit = str(formatted_kpi.get("unit", ""))
-    if unit in {"\u20b9", "â‚¹", "₹"}:
+    if unit in {"\u20b9", "Ã¢â€šÂ¹", "â‚¹"}:
         formatted_kpi["value"] = format_indian_number(formatted_kpi.get("value"))
 
     return formatted_kpi
@@ -234,7 +235,7 @@ def build_plain_text_response(raw_answer: str, is_multi_file: bool = False, mult
         "answer": html_to_display_text(answer_html),
         "answer_html": answer_html,
         "kpis": [],
-        "charts": [],
+        # "charts": [],
         "datasets_used": [],
         "comparison_mode": False,
         "ai_intelligence_analysis": [],
@@ -322,18 +323,195 @@ def extract_response_payload(raw_text: str):
             parsed_candidates.append(parsed)
 
     for parsed in reversed(parsed_candidates):
-        if {"answer", "kpis", "charts"}.issubset(parsed.keys()):
+        if {"answer", "kpis"}.issubset(parsed.keys()):
             return parsed
 
     for parsed in reversed(parsed_candidates):
-        if any(key in parsed for key in ("answer", "kpis", "charts")):
+        if any(key in parsed for key in ("answer", "kpis")):
             return parsed
 
     return None
 
 
+def _coerce_row_value(value) -> float:
+    """
+    Coerce model row values into float safely.
+    Supports numeric strings including comma-formatted values.
+    """
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    value_str = str(value).strip().replace(",", "")
+    value_str = re.sub(r"[^\d\.\-]", "", value_str)
+    if not value_str:
+        return 0.0
+
+    try:
+        return float(value_str)
+    except ValueError:
+        return 0.0
+
+
+def _numpy_sum_from_plan_rows(rows: list, label: str) -> float:
+    """
+    Build numpy array from computation-plan rows, log inputs/outputs,
+    and return the rounded sum.
+    """
+    values = [_coerce_row_value(row.get("value", 0)) for row in rows]
+    arr = np.array(values, dtype=float)
+    total = float(np.sum(arr))
+
+    print(f"[NUMPY_LOG] {label} -> input_values={arr.tolist()}")
+    print(f"[NUMPY_LOG] {label} -> np.sum_output={total}")
+
+    return round(total, 2)
+
+
+def _detect_revenue_column_from_rows(rows: list[dict]) -> str | None:
+    """
+    Detect revenue-like column name from dataset rows.
+    """
+    if not rows:
+        return None
+
+    # Prefer explicit monetary/value columns and avoid entity columns
+    # such as sales_rep, user_name, owner_id, etc.
+    strong_keywords = (
+        "revenue", "amount", "value", "deal_value", "dealvalue",
+        "expected_revenue", "expectedrevenue", "net_revenue", "gross_revenue"
+    )
+    weak_keywords = ("sales",)
+    deny_keywords = (
+        "name", "id", "user", "owner", "rep", "email", "phone",
+        "city", "state", "country", "status", "stage", "campaign",
+        "lead", "source", "industry", "company", "client"
+    )
+
+    def _numeric_profile(col_name: str) -> tuple[float, float]:
+        vals = [_coerce_row_value(row.get(col_name, 0)) for row in rows]
+        if not vals:
+            return (0.0, 0.0)
+        total = len(vals)
+        non_zero = sum(1 for v in vals if abs(v) > 0)
+        nz_ratio = non_zero / total
+        sum_abs = float(np.sum(np.abs(np.array(vals, dtype=float))))
+        return (nz_ratio, sum_abs)
+
+    candidates = []
+    for col in rows[0].keys():
+        original = str(col).strip().lower()
+        normalized = re.sub(r"[^a-z0-9]", "", original)
+
+        score = 0
+        if any(k in normalized for k in strong_keywords):
+            score += 10
+        if any(k in normalized for k in weak_keywords):
+            score += 2
+        if any(k in normalized for k in deny_keywords):
+            score -= 6
+
+        # Hard reject common identity columns unless explicitly revenue-like.
+        if score < 10 and any(k in normalized for k in ("salesrep", "owner", "username", "clientname")):
+            continue
+
+        nz_ratio, sum_abs = _numeric_profile(col)
+        score += int(nz_ratio * 4)
+        if sum_abs > 0:
+            score += 1
+
+        candidates.append((score, nz_ratio, sum_abs, col))
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
+    best_score, _, _, best_col = candidates[0]
+    if best_score <= 0:
+        return None
+    return best_col
+
+
+def _is_total_revenue_query(query: str) -> bool:
+    q = (query or "").lower()
+    has_total = any(token in q for token in ("total", "sum", "overall"))
+    has_revenue = any(token in q for token in ("revenue", "sales", "deal value", "deal_value"))
+    return has_total and has_revenue
+
+
+def enforce_backend_numpy_revenue_total(
+    parsed: dict,
+    query: str,
+    dataset_configs: list,
+    comparison_mode: bool,
+) -> dict:
+    """
+    Guardrail: For single-dataset total revenue queries, force arithmetic
+    to backend NumPy over real dataset rows (never trust model arithmetic).
+    """
+    if comparison_mode or len(dataset_configs) != 1:
+        return parsed
+    if not _is_total_revenue_query(query):
+        return parsed
+
+    config = dataset_configs[0]
+    rows = config.get("data", []) or []
+    if not rows:
+        return parsed
+
+    revenue_col = _detect_revenue_column_from_rows(rows)
+    if not revenue_col:
+        print("[NUMPY_GUARD] Revenue column not detected. Skipping backend override.")
+        return parsed
+
+    revenue_values = np.array(
+        [_coerce_row_value(row.get(revenue_col, 0)) for row in rows],
+        dtype=float
+    )
+    total = float(np.sum(revenue_values))
+    total_rounded = round(total, 2)
+
+    print(f"[NUMPY_GUARD] source_dataset={config.get('name')}")
+    print(f"[NUMPY_GUARD] revenue_col={revenue_col} row_count={len(revenue_values)}")
+    print(f"[NUMPY_GUARD] input_values={revenue_values.tolist()}")
+    print(f"[NUMPY_GUARD] np.sum_output={total}")
+
+    parsed["kpis"] = [{
+        "name": "Total Revenue",
+        "value": total_rounded,
+        "unit": "₹",
+        "insight": (
+            f"Computed by backend NumPy from real dataset rows only "
+            f"({len(revenue_values)} rows, column: {revenue_col})."
+        ),
+        "value_corrected": True,
+        "calculated_by": "backend_numpy"
+    }]
+
+    parsed["computation_plan"] = {
+        "metric": "Total Revenue",
+        "operation": "SUM",
+        "source_dataset": config.get("name"),
+        "value_column": revenue_col,
+        "row_count": int(len(revenue_values)),
+        "expected_total": total_rounded,
+        "calculated_by": "backend_numpy",
+        "llm_rows_ignored": True
+    }
+
+    parsed["answer"] = (
+        f"<p>✅ Total Revenue (backend-verified) from <strong>{len(revenue_values)}</strong> real rows "
+        f"in <strong>{config.get('name')}</strong> is <strong>₹{total_rounded}</strong>.</p>"
+        f"<p>Column used: <strong>{revenue_col}</strong>. "
+        f"Calculation path: <strong>NumPy sum</strong> on server-side dataset.</p>"
+    )
+
+    return parsed
+
+
 # ----------------------------
-# ✅ FIX 1: ARITHMETIC VERIFICATION
+# âœ… FIX 1: ARITHMETIC VERIFICATION
 # Recomputes totals from the LLM's own row-level breakdown
 # (computation_plan / verification_plan) and fixes mismatches
 # before the result reaches the frontend or cache.
@@ -365,11 +543,11 @@ def verify_and_fix_computation_plan(parsed: dict) -> dict:
     except (TypeError, ValueError):
         return parsed
 
-    computed = round(sum(float(row.get("value", 0)) for row in rows), 2)
+    computed = _numpy_sum_from_plan_rows(rows, "verify_and_fix_computation_plan")
 
     if abs(computed - reported_total) > 0.01:
         print(
-            f"⚠️  ARITHMETIC MISMATCH DETECTED: "
+            f"âš ï¸  ARITHMETIC MISMATCH DETECTED: "
             f"LLM reported {reported_total}, row-sum={computed}. "
             f"Overriding with correct value."
         )
@@ -382,7 +560,7 @@ def verify_and_fix_computation_plan(parsed: dict) -> dict:
         else:
             parsed["verification_plan"] = plan
 
-        # ── Patch KPI tiles that carry the wrong total ──────────────
+        # â”€â”€ Patch KPI tiles that carry the wrong total â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         kpis = parsed.get("kpis", [])
         for kpi in kpis:
             raw_val = kpi.get("value")
@@ -395,14 +573,14 @@ def verify_and_fix_computation_plan(parsed: dict) -> dict:
                     kpi["value_corrected"] = True
                     print(
                         f"   KPI '{kpi.get('name', '?')}' corrected: "
-                        f"{reported_total} → {computed}"
+                        f"{reported_total} â†’ {computed}"
                     )
             except (TypeError, ValueError):
                 continue
 
         parsed["kpis"] = kpis
 
-        # ── FIX: Patch answer HTML so displayed text shows corrected value ──
+        # â”€â”€ FIX: Patch answer HTML so displayed text shows corrected value â”€â”€
         # Replace the wrong number in the answer string so the frontend
         # does not show the stale incorrect figure.
         answer_html = parsed.get("answer", "")
@@ -419,18 +597,18 @@ def verify_and_fix_computation_plan(parsed: dict) -> dict:
             for wrong_str in wrong_str_variants:
                 if wrong_str and wrong_str in answer_html:
                     answer_html = answer_html.replace(wrong_str, correct_str)
-                    print(f"   Answer HTML patched: '{wrong_str}' → '{correct_str}'")
+                    print(f"   Answer HTML patched: '{wrong_str}' â†’ '{correct_str}'")
                     break
             parsed["answer"] = answer_html
 
     else:
-        print(f"✅ Arithmetic verified: {computed} matches reported {reported_total}")
+        print(f"âœ… Arithmetic verified: {computed} matches reported {reported_total}")
 
     return parsed
 
 
 # ----------------------------
-# ✅ FIX 2: DEAD-BUCKET GUARD
+# âœ… FIX 2: DEAD-BUCKET GUARD
 # The prompt.py REVENUE FILTER RULE says DEAD rows must NEVER appear
 # in any revenue total. This guard scans the computation_plan rows and
 # removes any DEAD bucket rows, then recalculates.
@@ -463,14 +641,14 @@ def remove_dead_bucket_rows(parsed: dict) -> dict:
             clean_rows.append(row)
 
     if removed:
-        dead_total = round(sum(float(r.get("value", 0)) for r in removed), 2)
+        dead_total = _numpy_sum_from_plan_rows(removed, "remove_dead_bucket_rows.dead_total")
         print(
-            f"⚠️  DEAD BUCKET GUARD: Removed {len(removed)} dead row(s) "
+            f"âš ï¸  DEAD BUCKET GUARD: Removed {len(removed)} dead row(s) "
             f"totalling {dead_total} from computation plan."
         )
         plan["rows"] = clean_rows
-        plan["expected_total"] = round(
-            sum(float(r.get("value", 0)) for r in clean_rows), 2
+        plan["expected_total"] = _numpy_sum_from_plan_rows(
+            clean_rows, "remove_dead_bucket_rows.clean_total"
         )
         plan["dead_rows_removed"] = len(removed)
         plan["dead_rows_value"] = dead_total
@@ -489,13 +667,13 @@ def remove_dead_bucket_rows(parsed: dict) -> dict:
 def fetch_data(dataset):
 
     if not dataset:
-        print("❌ FETCH_DATA: No dataset provided, returning empty")
+        print("âŒ FETCH_DATA: No dataset provided, returning empty")
         return []
 
     db = mongo_client.db
     collection = db["documents"]
 
-    print(f"🔍 FETCH_DATA: Looking for dataset '{dataset}'")
+    print(f"ðŸ” FETCH_DATA: Looking for dataset '{dataset}'")
 
     result = collection.find_one({
         "type": "dataset",
@@ -504,15 +682,15 @@ def fetch_data(dataset):
 
     if result:
         data = result.get("data", [])
-        print(f"✅ FETCH_DATA: Found dataset with {len(data)} rows")
+        print(f"âœ… FETCH_DATA: Found dataset with {len(data)} rows")
         return data
     else:
-        print(f"❌ FETCH_DATA: Dataset '{dataset}' not found in MongoDB")
+        print(f"âŒ FETCH_DATA: Dataset '{dataset}' not found in MongoDB")
         return []
 
 
 # ----------------------------
-# ✅ FIX 3: BUILD DATASET CONTEXT WITH ROW COUNT HEADER
+# âœ… FIX 3: BUILD DATASET CONTEXT WITH ROW COUNT HEADER
 # Previously the prompt passed data[:500] with no indication of the
 # total row count.  The model had no way to know it was seeing a slice,
 # so it claimed to have analysed all rows when it hadn't.
@@ -548,7 +726,7 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
 
     query = message.lower().strip()
 
-    # ✅ GET ACTIVE DATASETS
+    # âœ… GET ACTIVE DATASETS
     datasets = active_datasets or []
 
     if not datasets:
@@ -556,34 +734,34 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
             metadata = mongo_client.db["metadata"].find_one({"_id": "active_datasets"})
             if metadata:
                 datasets = metadata.get("value", [])
-                print(f"📍 Got datasets from MongoDB metadata: {datasets}")
+                print(f"ðŸ“ Got datasets from MongoDB metadata: {datasets}")
         except Exception as e:
-            print(f"⚠️  Could not read from MongoDB metadata: {e}")
+            print(f"âš ï¸  Could not read from MongoDB metadata: {e}")
 
     if not datasets and request and hasattr(request.app.state, 'ACTIVE_DATASETS'):
         datasets = request.app.state.ACTIVE_DATASETS
-        print(f"📍 Got datasets from app.state: {datasets}")
+        print(f"ðŸ“ Got datasets from app.state: {datasets}")
 
     if not datasets:
         datasets = upload_module.ACTIVE_DATASETS if hasattr(upload_module, 'ACTIVE_DATASETS') else []
-        print(f"📍 Got datasets from module: {datasets}")
+        print(f"ðŸ“ Got datasets from module: {datasets}")
 
     primary_dataset = datasets[0] if datasets else None
 
     print(f"ACTIVE DATASETS: {datasets}")
     print(f"PRIMARY DATASET: {primary_dataset}")
     print(f"COMPARISON MODE: {comparison_mode}")
-    print(f"🎯 Processing query: {query[:500]}...")
+    print(f"ðŸŽ¯ Processing query: {query[:500]}...")
 
     # ----------------------------
-    # 🔥 DETECT MULTI-FILE QUERIES
+    # ðŸ”¥ DETECT MULTI-FILE QUERIES
     # ----------------------------
     is_multi_file = multi_file_processor.is_multi_file_query(query, datasets or [])
     multi_file_context = None
 
     if is_multi_file and len(datasets) > 1:
-        print("\n" + "🔗"*25)
-        print("🔗 MULTI-FILE QUERY DETECTED")
+        print("\n" + "ðŸ”—"*25)
+        print("ðŸ”— MULTI-FILE QUERY DETECTED")
 
         relationships = relationship_manager.get_relationships()
 
@@ -602,7 +780,7 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
 
         print(f"   Query type: {multi_file_context.get('query_type')}")
         print(f"   Shared columns: {multi_file_context.get('shared_columns')}")
-        print("🔗"*25 + "\n")
+        print("ðŸ”—"*25 + "\n")
 
     # ----------------------------
     # CACHE CHECK (single dataset only)
@@ -611,11 +789,11 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
         cached = mongo_client.get_cached_result(primary_dataset, query)
 
         if cached:
-            # ✅ Only serve cache entries that passed verification
+            # âœ… Only serve cache entries that passed verification
             if cached.get("arithmetic_verified") is False:
-                print("⚠️  Cached result failed verification — skipping cache, recalculating.")
+                print("âš ï¸  Cached result failed verification â€” skipping cache, recalculating.")
             else:
-                print("✅ Returning cached result")
+                print("âœ… Returning cached result")
                 cached_answer_html = cached.get("answer_html")
                 if not cached_answer_html:
                     cached_answer_html = format_answer_html(cached.get("answer", ""))
@@ -623,7 +801,7 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
                     "answer": html_to_display_text(cached_answer_html),
                     "answer_html": cached_answer_html,
                     "kpis": [format_rupee_kpi_value(kpi) for kpi in cached.get("kpis", [])],
-                    "charts": cached["charts"],
+                    
                     "ai_intelligence_analysis": cached.get("ai_intelligence_analysis", []),
                     "comparison_mode": cached.get("comparison_mode", False),
                     "datasets_used": cached.get("datasets", [])
@@ -636,7 +814,7 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
 
     for dataset_name in datasets:
         data = fetch_data(dataset_name)
-        print(f"📊 Fetched {len(data)} data rows from dataset: {dataset_name}")
+        print(f"ðŸ“Š Fetched {len(data)} data rows from dataset: {dataset_name}")
         if data:
             dataset_configs.append({
                 "name": dataset_name,
@@ -644,19 +822,19 @@ def generate_ai_response(user_id: str, message: str, history=None, request=None,
             })
 
     if not dataset_configs:
-        print("⚠️  No datasets available - falling back to RAG")
+        print("âš ï¸  No datasets available - falling back to RAG")
     else:
-        print(f"✅ Loaded {len(dataset_configs)} dataset(s)")
+        print(f"âœ… Loaded {len(dataset_configs)} dataset(s)")
 
     if dataset_configs:
 
-        print("\n" + "✅"*25)
+        print("\n" + "âœ…"*25)
         print(f"MAIN PATH: Using {len(dataset_configs)} dataset(s)")
         for config in dataset_configs:
             print(f"   - {config['name']}: {len(config['data'])} rows")
-        print("✅"*25 + "\n")
+        print("âœ…"*25 + "\n")
 
-        # ✅ FIX 3: Use build_dataset_context() so the model knows
+        # âœ… FIX 3: Use build_dataset_context() so the model knows
         # the total row count and shown row count for each dataset.
         dataset_context = build_dataset_context(dataset_configs, max_rows_per_dataset=500)
 
@@ -699,7 +877,7 @@ User Query:
             raw_text = response.text if hasattr(response, "text") else str(response)
 
             # ----------------------------
-            # 🔥 CLEAN RAW TEXT
+            # ðŸ”¥ CLEAN RAW TEXT
             # ----------------------------
             raw_text = raw_text.replace("```json", "")
             raw_text = raw_text.replace("```", "")
@@ -722,7 +900,7 @@ User Query:
                 raw_text = json.dumps(preferred_payload)
 
             # ----------------------------
-            # 🔥 EXTRACT FULL JSON
+            # ðŸ”¥ EXTRACT FULL JSON
             # ----------------------------
             start = raw_text.find("{")
             end = raw_text.rfind("}") + 1
@@ -739,7 +917,7 @@ User Query:
             try:
                 parsed = load_model_json(json_str)
             except Exception as e:
-                print("❌ JSON Parse Error:", e)
+                print("âŒ JSON Parse Error:", e)
                 return build_plain_text_response(
                     raw_text,
                     is_multi_file=is_multi_file,
@@ -747,19 +925,25 @@ User Query:
                 )
 
             # ----------------------------
-            # ✅ FIX 1+2: VERIFY & CLEAN COMPUTATION PLAN
+            # âœ… FIX 1+2: VERIFY & CLEAN COMPUTATION PLAN
             # Run dead-bucket guard first, then arithmetic check.
             # verify_and_fix_computation_plan now also patches answer HTML.
             # ----------------------------
             parsed = remove_dead_bucket_rows(parsed)
             parsed = verify_and_fix_computation_plan(parsed)
+            parsed = enforce_backend_numpy_revenue_total(
+                parsed=parsed,
+                query=query,
+                dataset_configs=dataset_configs,
+                comparison_mode=comparison_mode
+            )
 
             # Track whether arithmetic passed for cache guard
             plan = parsed.get("computation_plan") or parsed.get("verification_plan") or {}
             arithmetic_verified = not plan.get("mismatch_detected", False)
 
             # ----------------------------
-            # 🔥 PREPARE FINAL OUTPUT
+            # ðŸ”¥ PREPARE FINAL OUTPUT
             # ----------------------------
             answer = parsed.get("answer", "").strip()
             answer = answer.replace("\\n", "\n")
@@ -771,12 +955,12 @@ User Query:
             answer = html_to_display_text(answer_html)
 
             final_kpis = [format_rupee_kpi_value(kpi) for kpi in parsed.get("kpis", [])]
-            final_charts = parsed.get("charts", [])
+            
 
             print("FINAL ANSWER:", answer)
 
             # ----------------------------
-            # 🔥 EXTRACT ENRICHMENT DATA FROM KPIs
+            # ðŸ”¥ EXTRACT ENRICHMENT DATA FROM KPIs
             # ----------------------------
             enriched_kpis = []
             for kpi in final_kpis:
@@ -816,7 +1000,7 @@ User Query:
             final_kpis = enriched_kpis
 
             # ----------------------------
-            # 🔥 EXTRACT & SURFACE INSIGHTS
+            # ðŸ”¥ EXTRACT & SURFACE INSIGHTS
             # ----------------------------
             ai_intelligence_analysis = []
             for kpi in final_kpis:
@@ -831,16 +1015,16 @@ User Query:
                     })
 
             # ----------------------------
-            # 🔥 SAVE RESULT
-            # ✅ FIX 3: Tag cache entry with arithmetic_verified flag.
+            # ðŸ”¥ SAVE RESULT
+            # âœ… FIX 3: Tag cache entry with arithmetic_verified flag.
             # ----------------------------
-            print("\n" + "🔴"*25)
+            print("\n" + "ðŸ”´"*25)
             print("SAVE CHECKPOINT 1: Checking if answer exists")
             print(f"   Answer exists: {bool(answer)}")
             print(f"   Answer length: {len(answer) if answer else 0}")
 
             if answer:
-                print("\n🔴 SAVE CHECKPOINT 2: Inside save block")
+                print("\nðŸ”´ SAVE CHECKPOINT 2: Inside save block")
                 print(f"   Primary Dataset: {primary_dataset}")
                 print(f"   All Datasets: {[c['name'] for c in dataset_configs]}")
                 print(f"   Query: {query}")
@@ -853,31 +1037,31 @@ User Query:
                         "answer": answer,
                         "answer_html": answer_html,
                         "kpis": final_kpis,
-                        "charts": final_charts,
+                        # "charts": final_charts,
                         "datasets": [c['name'] for c in dataset_configs],
                         "comparison_mode": comparison_mode,
                         "ai_intelligence_analysis": ai_intelligence_analysis,
                         "arithmetic_verified": arithmetic_verified
                     }
 
-                    print(f"\n🔴 SAVE CHECKPOINT 3: Calling mongo_client.save_result()")
+                    print(f"\nðŸ”´ SAVE CHECKPOINT 3: Calling mongo_client.save_result()")
                     result = mongo_client.save_result(save_data)
-                    print(f"\n🔴 SAVE CHECKPOINT 4: Save result returned: {result}")
+                    print(f"\nðŸ”´ SAVE CHECKPOINT 4: Save result returned: {result}")
 
                     if result:
-                        print("✅ SAVE SUCCESSFUL")
+                        print("âœ… SAVE SUCCESSFUL")
                     else:
-                        print("❌ SAVE FAILED - result was False")
+                        print("âŒ SAVE FAILED - result was False")
             else:
-                print("\n🔴 SAVE CHECKPOINT 1 FAILED: No answer to save")
+                print("\nðŸ”´ SAVE CHECKPOINT 1 FAILED: No answer to save")
 
-            print("🔴"*25 + "\n")
+            print("ðŸ”´"*25 + "\n")
 
             return {
                 "answer": answer,
                 "answer_html": answer_html,
                 "kpis": final_kpis,
-                "charts": final_charts,
+                # "charts": final_charts,
                 "datasets_used": [c['name'] for c in dataset_configs],
                 "comparison_mode": comparison_mode,
                 "ai_intelligence_analysis": ai_intelligence_analysis,
@@ -886,12 +1070,12 @@ User Query:
             }
 
         except Exception as e:
-            print("❌ AI Error:", str(e))
+            print("âŒ AI Error:", str(e))
 
             return {
                 "answer": "AI service unavailable",
                 "kpis": [],
-                "charts": [],
+                # "charts": [],
                 "datasets_used": [],
                 "comparison_mode": False,
                 "is_multi_file_analysis": is_multi_file,
@@ -901,7 +1085,7 @@ User Query:
     # ----------------------------
     # FALLBACK (RAG)
     # ----------------------------
-    print("🔄 Using RAG fallback (no dataset)")
+    print("ðŸ”„ Using RAG fallback (no dataset)")
     docs = retriever.get_relevant_documents(message)
     context = "\n\n".join(doc.page_content for doc in docs)
 
@@ -914,13 +1098,13 @@ User Query:
         raw_text = response.text if hasattr(response, "text") else str(response)
         answer_html = format_answer_html(raw_text.strip())
 
-        print("💾 RAG Fallback: NOT saving to DB (no dataset)")
+        print("ðŸ’¾ RAG Fallback: NOT saving to DB (no dataset)")
 
         return {
             "answer": html_to_display_text(answer_html),
             "answer_html": answer_html,
             "kpis": [],
-            "charts": [],
+            # "charts": [],
             "datasets_used": [],
             "comparison_mode": False,
             "is_multi_file_analysis": False,
@@ -928,14 +1112,15 @@ User Query:
         }
 
     except Exception as e:
-        print("❌ AI Error:", str(e))
+        print("âŒ AI Error:", str(e))
 
         return {
             "answer": "AI service unavailable",
             "kpis": [],
-            "charts": [],
+            # "charts": [],
             "datasets_used": [],
             "comparison_mode": False,
             "is_multi_file_analysis": False,
             "multi_file_context": None
         }
+
