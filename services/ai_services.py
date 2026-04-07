@@ -9,8 +9,24 @@ from google import genai
 from mongo_client import mongo_client
 from utils.request_tracker import tracker
 from rag_retriever import RAGRetriever
-from prompt_re import SYSTEM_PROMPT
 from routes import upload as upload_module
+
+# System prompt for AI analysis
+SYSTEM_PROMPT = """
+You are a Business Health Intelligence (BHI) analytics engine.
+Your role is to analyze business datasets and provide actionable insights.
+
+When analyzing data:
+1. Extract relevant metrics from the provided datasets
+2. Calculate totals, breakdowns, and comparisons as requested
+3. Identify trends and patterns in the data
+4. Provide clear, structured responses in JSON format with:
+   - "answer": Human-readable summary
+   - "kpis": List of key metrics with values and units
+   - "ai_intelligence_analysis": Detailed insights
+5. Always show units (e.g., 'INR' for currency) and format large numbers clearly
+6. If unable to answer, be explicit about missing data
+"""
 from multi_file_queries import multi_file_processor
 from data_relationships import relationship_manager
 

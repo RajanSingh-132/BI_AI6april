@@ -1,19 +1,35 @@
 import logging
 from typing import List
 from langchain_core.documents import Document
-from embeddingclient import BedrockEmbeddingClient
 from mongo_client import MongoDBClient
 import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Try to import BedrockEmbeddingClient, but don't fail if it's not available
+try:
+    from embeddingclient import BedrockEmbeddingClient
+    BEDROCK_AVAILABLE = True
+except (ImportError, RuntimeError) as e:
+    BEDROCK_AVAILABLE = False
+    BedrockEmbeddingClient = None
+    logger.warning(f"[RAG_WARN] BedrockEmbeddingClient not available: {e}")
+
 
 class RAGRetriever:
 
     def __init__(self):
-
-        self.embedding_client = BedrockEmbeddingClient()
+        if BEDROCK_AVAILABLE and BedrockEmbeddingClient:
+            try:
+                self.embedding_client = BedrockEmbeddingClient()
+            except Exception as e:
+                logger.warning(f"[RAG_WARN] Failed to initialize BedrockEmbeddingClient: {e}")
+                self.embedding_client = None
+        else:
+            self.embedding_client = None
+            logger.warning("[RAG_WARN] Bedrock embeddings not available")
+        
         self.mongo_client = MongoDBClient()
         self.collection = self.mongo_client.collection
 
@@ -29,6 +45,11 @@ class RAGRetriever:
 
         try:
             logger.info(f"[QUERY] {query}")
+
+            # 🔥 If embedding client is not available, return empty list
+            if not self.embedding_client:
+                logger.warning("[RAG] Embedding client not available, returning no results")
+                return []
 
             # 🔥 FIX 1: correct embedding method
             query_embedding = self.embedding_client.generate_embedding(query)

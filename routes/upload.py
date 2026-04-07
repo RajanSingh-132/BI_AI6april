@@ -1,9 +1,21 @@
 from fastapi import APIRouter, HTTPException, Request
 from datetime import datetime
 from typing import List
+import logging
 
 from semanticstore import process_dataset
-from embeddingclient import BedrockEmbeddingClient
+
+logger = logging.getLogger(__name__)
+
+# Try to import BedrockEmbeddingClient, but don't fail if it's not available
+try:
+    from embeddingclient import BedrockEmbeddingClient
+    BEDROCK_AVAILABLE = True
+except (ImportError, RuntimeError) as e:
+    BEDROCK_AVAILABLE = False
+    BedrockEmbeddingClient = None
+    print(f"[WARN] BedrockEmbeddingClient not available: {e}")
+
 from data_relationships import relationship_manager
 
 router = APIRouter()
@@ -123,14 +135,21 @@ async def upload_json(request: Request):
 
         db["documents"].insert_one(document)
 
-        embedding_client = BedrockEmbeddingClient()
-
-        process_dataset(
-            data=cleaned_data,
-            file_name=file_name,
-            embedding_client=embedding_client,
-            mongo_client=mongo_client
-        )
+        # Only process embeddings if available
+        if BEDROCK_AVAILABLE and BedrockEmbeddingClient:
+            try:
+                embedding_client = BedrockEmbeddingClient()
+                process_dataset(
+                    data=cleaned_data,
+                    file_name=file_name,
+                    embedding_client=embedding_client,
+                    mongo_client=mongo_client
+                )
+            except Exception as e:
+                print(f"[WARN] Embedding processing failed: {e}")
+                # Continue anyway - upload still succeeds
+        else:
+            print(f"[INFO] Bedrock embeddings not available, skipping semantic processing")
 
         return {
             "status": "success",
@@ -219,13 +238,21 @@ async def upload_multiple_json(request: Request):
             if file_name not in active_batch:
                 active_batch.append(file_name)
             
-            embedding_client = BedrockEmbeddingClient()
-            process_dataset(
-                data=cleaned_data,
-                file_name=file_name,
-                embedding_client=embedding_client,
-                mongo_client=mongo_client
-            )
+            # Only process embeddings if available
+            if BEDROCK_AVAILABLE and BedrockEmbeddingClient:
+                try:
+                    embedding_client = BedrockEmbeddingClient()
+                    process_dataset(
+                        data=cleaned_data,
+                        file_name=file_name,
+                        embedding_client=embedding_client,
+                        mongo_client=mongo_client
+                    )
+                except Exception as e:
+                    logger.warning(f"[WARN] Embedding processing failed for {file_name}: {e}")
+                    # Continue anyway - upload still succeeds
+            else:
+                logger.info(f"[INFO] Bedrock embeddings not available, skipping semantic processing")
             
             results.append({
                 "file_name": file_name,

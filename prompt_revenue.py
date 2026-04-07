@@ -1,126 +1,95 @@
+"""
+SIMPLIFIED Revenue Analysis Module
+Single formula: Total Revenue = SUM(revenue_column)
+Comprehensive audit logging for full trail.
+"""
+
 from __future__ import annotations
 
 import json
-from typing import Any
-
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import ChatPromptTemplate
+import logging
+from typing import Any, Dict, List, Tuple
+from audit_logger import get_logger, AuditLog
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 try:
     import pandas as pd
-except ImportError:  # pragma: no cover - pandas is optional at import time
+except ImportError:
     pd = None
 
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
-You are an AI Business Analyst focused on revenue analysis.
+You are an AI Business Analyst focused on REVENUE ANALYSIS using a SINGLE, SIMPLE FORMULA.
 
-Your job is to analyze the provided dataset and answer the user's revenue
-question using only the rows that appear in the dataset payload.
+FORMULA: Total Revenue = SUM(deal_value_or_revenue_column)
 
-Mandatory rules:
-1. Treat the dataset as the single source of truth.
-2. Decompose the query into:
-   - entity
-   - metric
-   - operation
-   - filters
-   - sort
-   - limit
-3. Never fabricate columns, values, groups, or totals.
-4. Use exact row-level evidence from the provided dataset.
-5. If the dataset is partial, mention that in notes instead of pretending you saw more rows.
-6. If grouping is used, the sum of grouped values must equal the total dataset value.
-7. If a required column is missing, set validation_passed to false and explain why in notes.
-8. Return structured JSON only and follow the schema exactly.
+Rules:
+1. Treat the dataset as the ONLY source of truth. NO fabrication.
+2. Identify the revenue column (Deal_Value, revenue, amount, or similar).
+3. Apply only filters explicitly mentioned in the user query.
+4. Return SUM of all revenue values from matching rows.
+5. Group by entity (e.g., Lead_Source, Owner, Industry) ONLY if user asks for breakdown.
+6. When grouped, sum_of_group_values MUST equal total_dataset_value exactly.
+7. row_count_lock must match the actual number of rows used.
+8. If a required column is missing, set validation_passed=false.
 
-Validation rules:
-- total_dataset_value must represent the full revenue total from the filtered dataset.
-- sum_of_group_values must equal the sum of all grouped entity totals.
-- row_count_lock must equal the total number of rows used in the calculation.
-- validation_passed must be true only when the totals reconcile.
-
-Self-check before you answer:
-- Did you use the actual dataset rows?
-- Did you apply all filters mentioned in the query?
-- Did you avoid estimating missing values?
-- Does total_dataset_value equal sum_of_group_values?
-
-If any check fails, return validation_passed=false and explain the issue in notes.
+Output structure (JSON only):
+{
+  "query": "user query",
+  "revenue_column_identified": "column_name",
+  "filters_applied": ["filter1", "filter2"],
+  "total_rows_in_dataset": N,
+  "rows_after_filters": N,
+  "total_revenue": FLOAT,
+  "group_breakdown": [{"entity": "value", "entity_name": "name", "revenue": FLOAT, "rows": N}],
+  "validation_passed": true/false,
+  "validation_notes": ["note1"]
+}
 """
 
 
 CORRECTION_SYSTEM_PROMPT = """
-You are repairing a previous revenue-analysis result that failed validation.
+You are correcting a failed revenue analysis using the SAME SIMPLE FORMULA.
 
-Recalculate from scratch using only the provided dataset and original query.
-Do not defend the earlier answer. Produce a corrected JSON response that satisfies
-the schema and reconciliation rules.
+Formula: Total Revenue = SUM(revenue_column)
+
+Recalculate:
+1. Identify the revenue column correctly.
+2. Apply all filters from the original query.
+3. Sum the revenue values.
+4. Return corrected JSON only.
 """
 
 
-class RevenueFilter(BaseModel):
-    column: str = Field(description="Real dataset column used for filtering.")
-    operator: str = Field(
-        default="=",
-        description="Filter operator such as '=', '!=', '>', '<', or 'contains'.",
-    )
-    value: Any = Field(description="Filter value extracted from the user query.")
-
-
-class RevenueGroupResult(BaseModel):
-    entity_value: str = Field(description="Grouped entity value, such as a user or campaign name.")
-    metric_value: float = Field(description="Calculated revenue for this entity.")
-    row_count: int = Field(description="How many rows contributed to this grouped value.")
-
-
-class RevenueAnalysis(BaseModel):
-    entity: str = Field(description="Column name used to group results.")
-    metric: str = Field(description="Metric being calculated, usually revenue.")
-    operation: str = Field(description="Math operation such as SUM, AVG, or COUNT.")
-    filters: list[RevenueFilter] = Field(
+class RevenueResult(BaseModel):
+    """Simplified revenue analysis result."""
+    query: str = Field(description="The original user query")
+    revenue_column_identified: str = Field(description="Column name used for revenue")
+    filters_applied: List[str] = Field(default_factory=list, description="Filters applied")
+    total_rows_in_dataset: int = Field(description="Total rows available")
+    rows_after_filters: int = Field(description="Rows after applying filters")
+    total_revenue: float = Field(description="SUM(revenue_column)")
+    group_breakdown: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="Filters applied to the dataset before calculation.",
+        description="Optional grouping breakdown"
     )
-    sort: str = Field(description="Sort direction, usually DESC or ASC.")
-    limit: int | None = Field(
-        default=None,
-        description="Maximum number of grouped results requested by the user.",
-    )
-    group_results: list[RevenueGroupResult] = Field(
+    validation_passed: bool = Field(description="True if calculation is valid")
+    validation_notes: List[str] = Field(
         default_factory=list,
-        description="Grouped revenue results after applying filters.",
+        description="Notes about validation and assumptions"
     )
-    total_dataset_value: float = Field(
-        description="Revenue total calculated directly from all filtered dataset rows.",
-    )
-    sum_of_group_values: float = Field(
-        description="Sum of every metric_value inside group_results.",
-    )
-    row_count_lock: int = Field(
-        description="Number of dataset rows actually used in the calculation.",
-    )
-    validation_passed: bool = Field(
-        description="True only if the grouped totals reconcile with the dataset total.",
-    )
-    notes: list[str] = Field(
-        default_factory=list,
-        description="Short notes about assumptions, limitations, or validation issues.",
-    )
-
-
-def _model_dump(model: BaseModel) -> dict[str, Any]:
-    if hasattr(model, "model_dump"):
-        return model.model_dump()
-    return model.dict()
 
 
 def serialize_dataset(dataset: Any) -> str:
-    """
-    Convert common dataset inputs into a prompt-friendly string.
-    Supports raw strings, lists of dicts, dict payloads, and pandas DataFrames.
-    """
+    """Convert dataset to JSON string for LLM prompt."""
     if dataset is None:
         return ""
 
@@ -130,208 +99,352 @@ def serialize_dataset(dataset: Any) -> str:
     if pd is not None and isinstance(dataset, pd.DataFrame):
         return json.dumps(dataset.to_dict(orient="records"), indent=2, default=str)
 
-    if isinstance(dataset, (list, dict, tuple)):
+    if isinstance(dataset, (list, dict)):
         return json.dumps(dataset, indent=2, default=str)
 
     return str(dataset)
 
 
-def build_revenue_parser() -> JsonOutputParser:
-    return JsonOutputParser(pydantic_object=RevenueAnalysis)
-
-
-def build_revenue_prompt(
-    parser: JsonOutputParser | None = None,
-) -> ChatPromptTemplate:
-    parser = parser or build_revenue_parser()
-    return ChatPromptTemplate.from_messages(
-        [
-            ("system", "{system_prompt}\n\n{format_instructions}"),
-            (
-                "human",
-                "Analyze this dataset for revenue.\n\nDataset:\n{dataset}\n\nQuery:\n{query}",
-            ),
-        ]
-    ).partial(
-        system_prompt=SYSTEM_PROMPT,
-        format_instructions=parser.get_format_instructions(),
-    )
-
-
-def build_revenue_correction_prompt(
-    parser: JsonOutputParser | None = None,
-) -> ChatPromptTemplate:
-    parser = parser or build_revenue_parser()
-    return ChatPromptTemplate.from_messages(
-        [
-            ("system", "{system_prompt}\n\n{format_instructions}"),
-            (
-                "human",
-                "The previous result failed validation.\n\n"
-                "Dataset:\n{dataset}\n\n"
-                "Original Query:\n{query}\n\n"
-                "Previous Result:\n{previous_result}\n\n"
-                "Validation Error:\n{validation_error}\n\n"
-                "Recalculate and return corrected JSON only.",
-            ),
-        ]
-    ).partial(
-        system_prompt=f"{SYSTEM_PROMPT}\n\n{CORRECTION_SYSTEM_PROMPT}",
-        format_instructions=parser.get_format_instructions(),
-    )
-
-
-def build_revenue_chain(model: Any, parser: JsonOutputParser | None = None):
-    parser = parser or build_revenue_parser()
-    prompt = build_revenue_prompt(parser)
-    return prompt | model | parser
-
-
-def _coerce_float(value: Any, default: float = 0.0) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _coerce_int(value: Any, default: int = 0) -> int:
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def validate_revenue_result(
-    result: dict[str, Any] | RevenueAnalysis,
-    tolerance: float = 0.01,
-) -> tuple[bool, str]:
-    payload = _model_dump(result) if isinstance(result, BaseModel) else dict(result)
-
-    total_dataset_value = _coerce_float(payload.get("total_dataset_value"))
-    sum_of_group_values = _coerce_float(payload.get("sum_of_group_values"))
-    row_count_lock = _coerce_int(payload.get("row_count_lock"))
-    validation_passed = bool(payload.get("validation_passed"))
-    group_results = payload.get("group_results") or []
-    requested_limit = payload.get("limit")
-
-    if not validation_passed:
-        return False, "Model reported validation_passed=false."
-
-    if abs(total_dataset_value - sum_of_group_values) > tolerance:
-        return (
-            False,
-            "Aggregation mismatch: total_dataset_value does not equal sum_of_group_values.",
-        )
-
-    if row_count_lock < 0:
-        return False, "row_count_lock must be zero or greater."
-
-    if requested_limit is not None and len(group_results) > requested_limit:
-        return False, "group_results exceeds the requested limit."
-
-    return True, ""
-
-
-def build_failure_result(query: str, error_message: str) -> dict[str, Any]:
-    return {
-        "entity": "unknown",
-        "metric": "revenue",
-        "operation": "SUM",
-        "filters": [],
-        "sort": "DESC",
-        "limit": None,
-        "group_results": [],
-        "total_dataset_value": 0.0,
-        "sum_of_group_values": 0.0,
-        "row_count_lock": 0,
-        "validation_passed": False,
-        "notes": [
-            "Data inconsistency detected. Unable to compute reliable result from provided dataset.",
-            f"Original query: {query}",
-            error_message,
-        ],
-    }
-
-
-def run_revenue_analysis(
-    model: Any,
-    dataset: Any,
-    query: str,
-    max_attempts: int = 2,
-) -> dict[str, Any]:
+class RevenueAnalyzer:
     """
-    Execute the revenue-analysis prompt and automatically retry once when the
-    result fails the reconciliation checks.
-
-    The provided model must be LCEL-compatible, for example:
-    `ChatOpenAI(...)`, `ChatAnthropic(...)`, or another LangChain chat model.
+    Analyzes revenue from datasets.
+    Uses SINGLE FORMULA: Total Revenue = SUM(revenue_column)
     """
-    parser = build_revenue_parser()
-    dataset_text = serialize_dataset(dataset)
-    prompt = build_revenue_prompt(parser)
-    correction_prompt = build_revenue_correction_prompt(parser)
 
-    previous_result: dict[str, Any] | None = None
-    validation_error = ""
+    # Priority order: prefer "revenue_earned" over "deal_amount"
+    # This ensures actual earned revenue is used instead of deal potential
+    REVENUE_COLUMNS = [
+        "revenue_earned",  # Actual revenue earned (highest priority)
+        "revenue",         # Generic revenue column
+        "sales_revenue",   # Sales revenue
+        "amount_earned",   # Amount earned
+        "Deal_Value",      # Salesforce deal value
+        "deal_value",
+        "deal_amount",     # Deal amount (potential, not earned)
+        "amount",
+        "sales",
+        "total",
+        "value",
+    ]
 
-    for attempt in range(1, max_attempts + 1):
-        chain = (prompt if attempt == 1 else correction_prompt) | model | parser
+    def __init__(self):
+        self.audit_logger = get_logger()
 
-        payload = {
-            "dataset": dataset_text,
-            "query": query,
-        }
+    def _identify_revenue_column(self, df: pd.DataFrame) -> Tuple[str, bool]:
+        """
+        Identify which column contains revenue data.
+        Uses priority-based matching:
+        1. Exact match (case-insensitive)
+        2. Substring match (case-insensitive) - matches columns containing the keyword
+        """
+        if not isinstance(df, pd.DataFrame):
+            return "", False
 
-        if attempt > 1:
-            payload["previous_result"] = json.dumps(previous_result or {}, indent=2)
-            payload["validation_error"] = validation_error
+        df_columns = [c.lower() for c in df.columns]
 
-        result = chain.invoke(payload)
-        is_valid, validation_error = validate_revenue_result(result)
+        # PASS 1: Exact match
+        for col in self.REVENUE_COLUMNS:
+            col_lower = col.lower()
+            if col_lower in df_columns:
+                # Find the original column name with correct casing
+                matching_col = [c for c in df.columns if c.lower() == col_lower][0]
+                self.audit_logger.logger.info(
+                    f"[REVENUE_COL] Exact match found: {col_lower} → {matching_col}"
+                )
+                return matching_col, True
 
-        if is_valid:
-            return result
+        # PASS 2: Substring match (higher priority columns first)
+        for col in self.REVENUE_COLUMNS:
+            col_lower = col.lower()
+            for df_col in df_columns:
+                if col_lower in df_col:
+                    # Find the original column name with correct casing
+                    matching_col = [c for c in df.columns if c.lower() == df_col][0]
+                    self.audit_logger.logger.info(
+                        f"[REVENUE_COL] Substring match found: {col_lower} in {df_col} → {matching_col}"
+                    )
+                    return matching_col, True
 
-        previous_result = result
+        return "", False
 
-    return build_failure_result(query=query, error_message=validation_error)
+    def calculate_total_revenue(
+        self,
+        dataset: pd.DataFrame,
+        query: str = "",
+        filters: Dict[str, Any] = None,
+    ) -> Dict[str, Any]:
+        """
+        Calculate total revenue using single formula.
+        Formula: Total Revenue = SUM(revenue_column)
+        """
+        audit_logger = get_logger()
+
+        try:
+            if not isinstance(dataset, pd.DataFrame):
+                dataset = pd.DataFrame(dataset)
+
+            initial_row_count = len(dataset)
+            revenue_col, col_found = self._identify_revenue_column(dataset)
+
+            if not col_found:
+                audit_logger.log_calculation(
+                    operation="calculate_total_revenue",
+                    module="prompt_revenue",
+                    query=query,
+                    input_rows=initial_row_count,
+                    output_rows=0,
+                    filters=[],
+                    formula="SUM(revenue_column) - FAILED: Column not found",
+                    result=0.0,
+                    column_mapping={},
+                    validation_passed=False,
+                    notes=["Revenue column not identified in dataset"],
+                )
+                return {
+                    "query": query,
+                    "revenue_column_identified": "",
+                    "filters_applied": [],
+                    "total_rows_in_dataset": initial_row_count,
+                    "rows_after_filters": 0,
+                    "total_revenue": 0.0,
+                    "group_breakdown": [],
+                    "validation_passed": False,
+                    "validation_notes": ["Revenue column not found in dataset"],
+                }
+
+            # Audit log: column identification
+            audit_logger.logger.info(
+                f"[OK] Revenue column identified: {revenue_col}"
+            )
+
+            # Apply filters if provided
+            filtered_df = dataset.copy()
+            filters_applied = []
+
+            if filters:
+                for col, value in filters.items():
+                    if col in filtered_df.columns:
+                        filtered_df = filtered_df[filtered_df[col] == value]
+                        filters_applied.append(f"{col}={value}")
+                        audit_logger.logger.info(f"[FILTER] Applied: {col}={value}")
+
+            filtered_row_count = len(filtered_df)
+
+            # SINGLE FORMULA: Total Revenue = SUM(revenue_column)
+            total_revenue = float(filtered_df[revenue_col].sum())
+
+            # Audit log: calculation
+            audit_logger.log_calculation(
+                operation="calculate_total_revenue",
+                module="prompt_revenue",
+                query=query,
+                input_rows=initial_row_count,
+                output_rows=filtered_row_count,
+                filters=filters_applied,
+                formula=f"SUM({revenue_col})",
+                result=total_revenue,
+                column_mapping={"revenue": revenue_col},
+                validation_passed=True,
+                notes=[
+                    f"Formula: Total Revenue = SUM({revenue_col})",
+                    f"Rows used: {filtered_row_count}",
+                    f"Total: {total_revenue}",
+                ],
+            )
+
+            return {
+                "query": query,
+                "revenue_column_identified": revenue_col,
+                "filters_applied": filters_applied,
+                "total_rows_in_dataset": initial_row_count,
+                "rows_after_filters": filtered_row_count,
+                "total_revenue": total_revenue,
+                "group_breakdown": [],
+                "validation_passed": True,
+                "validation_notes": [
+                    f"Used column: {revenue_col}",
+                    f"Rows processed: {filtered_row_count} / {initial_row_count}",
+                ],
+            }
+
+        except Exception as e:
+            audit_logger.logger.error(f"Error in calculate_total_revenue: {str(e)}")
+            return {
+                "query": query,
+                "revenue_column_identified": "",
+                "filters_applied": [],
+                "total_rows_in_dataset": len(dataset) if isinstance(dataset, pd.DataFrame) else 0,
+                "rows_after_filters": 0,
+                "total_revenue": 0.0,
+                "group_breakdown": [],
+                "validation_passed": False,
+                "validation_notes": [f"Error: {str(e)}"],
+            }
+
+    def calculate_revenue_by_group(
+        self,
+        dataset: pd.DataFrame,
+        group_by: str,
+        query: str = "",
+        filters: Dict[str, Any] = None,
+    ) -> Dict[str, Any]:
+        """
+        Calculate revenue grouped by entity.
+        Formula: Revenue per group = SUM(revenue_column) where group_by = value
+        """
+        audit_logger = get_logger()
+
+        try:
+            if not isinstance(dataset, pd.DataFrame):
+                dataset = pd.DataFrame(dataset)
+
+            initial_row_count = len(dataset)
+            revenue_col, col_found = self._identify_revenue_column(dataset)
+
+            if not col_found:
+                return {
+                    "query": query,
+                    "revenue_column_identified": "",
+                    "filters_applied": [],
+                    "total_rows_in_dataset": initial_row_count,
+                    "rows_after_filters": 0,
+                    "total_revenue": 0.0,
+                    "group_breakdown": [],
+                    "validation_passed": False,
+                    "validation_notes": ["Revenue column not found"],
+                }
+
+            # Find matching column name case-insensitively
+            matching_group_col = None
+            for col in dataset.columns:
+                if col.lower() == group_by.lower():
+                    matching_group_col = col
+                    break
+            
+            if not matching_group_col:
+                return {
+                    "query": query,
+                    "revenue_column_identified": revenue_col,
+                    "filters_applied": [],
+                    "total_rows_in_dataset": initial_row_count,
+                    "rows_after_filters": 0,
+                    "total_revenue": 0.0,
+                    "group_breakdown": [],
+                    "validation_passed": False,
+                    "validation_notes": [f"Group column '{group_by}' not found"],
+                }
+
+            filtered_df = dataset.copy()
+            filters_applied = []
+
+            if filters:
+                for col, value in filters.items():
+                    if col in filtered_df.columns:
+                        filtered_df = filtered_df[filtered_df[col] == value]
+                        filters_applied.append(f"{col}={value}")
+
+            filtered_row_count = len(filtered_df)
+            total_revenue = float(filtered_df[revenue_col].sum())
+
+            # Group by entity and sum revenue
+            group_results = []
+            grouped = filtered_df.groupby(matching_group_col)[revenue_col].agg(["sum", "count"])
+
+            for group_value, row in grouped.iterrows():
+                group_results.append({
+                    "entity": matching_group_col,
+                    "entity_name": str(group_value),
+                    "revenue": float(row["sum"]),
+                    "rows": int(row["count"]),
+                })
+
+                audit_logger.logger.info(
+                    f"[GROUP] {matching_group_col}={group_value}, Revenue={row['sum']}, Rows={row['count']}"
+                )
+
+            # Validate: sum of groups = total
+            sum_of_groups = sum(g["revenue"] for g in group_results)
+            validation_passed = abs(sum_of_groups - total_revenue) < 0.01
+
+            audit_logger.log_calculation(
+                operation="calculate_revenue_by_group",
+                module="prompt_revenue",
+                query=query,
+                input_rows=initial_row_count,
+                output_rows=len(group_results),
+                filters=filters_applied + [f"group_by={matching_group_col}"],
+                formula=f"SUM({revenue_col}) GROUP BY {matching_group_col}",
+                result=total_revenue,
+                column_mapping={"revenue": revenue_col, "group": matching_group_col},
+                validation_passed=validation_passed,
+                notes=[
+                    f"Total revenue: {total_revenue}",
+                    f"Number of groups: {len(group_results)}",
+                    f"Sum of groups: {sum_of_groups}",
+                ],
+            )
+
+            return {
+                "query": query,
+                "revenue_column_identified": revenue_col,
+                "filters_applied": filters_applied,
+                "total_rows_in_dataset": initial_row_count,
+                "rows_after_filters": filtered_row_count,
+                "total_revenue": total_revenue,
+                "group_breakdown": group_results,
+                "validation_passed": validation_passed,
+                "validation_notes": [
+                    f"Grouped by: {matching_group_col}",
+                    f"Number of groups: {len(group_results)}",
+                    f"Total rows: {filtered_row_count}",
+                ] + ([] if validation_passed else [f"Reconciliation: {sum_of_groups} vs {total_revenue}"]),
+            }
+
+        except Exception as e:
+            audit_logger.logger.error(f"Error in calculate_revenue_by_group: {str(e)}")
+            return {
+                "query": query,
+                "revenue_column_identified": "",
+                "filters_applied": [],
+                "total_rows_in_dataset": 0,
+                "rows_after_filters": 0,
+                "total_revenue": 0.0,
+                "group_breakdown": [],
+                "validation_passed": False,
+                "validation_notes": [f"Error: {str(e)}"],
+            }
 
 
-# ---------------------------------------------------------------------------
-# Legacy revenue helpers kept for compatibility with any external imports.
-# ---------------------------------------------------------------------------
-
+# Legacy compatibility - keep for backward compatibility
 def total_revenue(context: dict[str, Any]) -> Any:
+    """Legacy: Get total revenue from context."""
     return context.get("revenue")
 
 
 def revenue_per_click(context: dict[str, Any]) -> float | None:
+    """Legacy: Calculate revenue per click."""
     revenue = context.get("revenue")
     clicks = context.get("clicks")
-
     if not clicks:
         return None
-
     return round(revenue / clicks, 2)
 
 
 def roas(context: dict[str, Any]) -> float | None:
+    """Legacy: Calculate ROAS."""
     revenue = context.get("revenue")
     cost = context.get("cost")
-
     if not cost:
         return None
-
     return round(revenue / cost, 2)
 
 
 def revenue_per_user(context: dict[str, Any]) -> float | None:
+    """Legacy: Calculate revenue per user."""
     revenue = context.get("revenue")
     users = context.get("users")
-
     if not users:
         return None
-
     return round(revenue / users, 2)
 
 
@@ -339,32 +452,23 @@ def revenue_contribution(
     context: dict[str, Any],
     global_context: dict[str, Any],
 ) -> float | None:
+    """Legacy: Calculate revenue contribution percentage."""
     revenue = context.get("revenue")
     global_revenue = global_context.get("revenue")
-
     if not global_revenue:
         return None
-
     return round((revenue / global_revenue) * 100, 2)
 
 
 __all__ = [
+    "RevenueAnalyzer",
+    "RevenueResult",
     "SYSTEM_PROMPT",
-    "CORRECTION_SYSTEM_PROMPT",
-    "RevenueFilter",
-    "RevenueGroupResult",
-    "RevenueAnalysis",
     "serialize_dataset",
-    "build_revenue_parser",
-    "build_revenue_prompt",
-    "build_revenue_correction_prompt",
-    "build_revenue_chain",
-    "validate_revenue_result",
-    "build_failure_result",
-    "run_revenue_analysis",
     "total_revenue",
     "revenue_per_click",
     "roas",
     "revenue_per_user",
     "revenue_contribution",
 ]
+

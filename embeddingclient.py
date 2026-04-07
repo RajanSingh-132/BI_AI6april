@@ -2,18 +2,27 @@ import os
 import logging
 import json
 from typing import List, Optional
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+try:
+    import boto3
+    from botocore.exceptions import BotoCoreError, ClientError
+    BOTO3_AVAILABLE = True
+except ImportError:
+    BOTO3_AVAILABLE = False
+    logger.warning("[BEDROCK_WARN] boto3 not available - Bedrock embeddings disabled")
+
 class BedrockEmbeddingClient:
     """AWS Bedrock client for Titan v2 embeddings."""
     
     def __init__(self):
+        if not BOTO3_AVAILABLE:
+            raise RuntimeError("[BEDROCK_ERR] boto3 is not installed. Bedrock embeddings cannot be initialized.")
+        
         self.aws_access_key = os.getenv("accesskey")
         self.aws_secret_key = os.getenv("secretaccesskey")
         self.aws_region = os.getenv("awsregion")

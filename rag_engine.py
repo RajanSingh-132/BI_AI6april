@@ -5,7 +5,6 @@ import numpy as np
 from typing import List, Dict, Any
 from models import Message
 from rag_retriever import RAGRetriever
-from prompt_re import SYSTEM_PROMPT
 from google import genai
 from mongo_client import MongoDBClient
 
