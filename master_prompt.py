@@ -1,7 +1,8 @@
 """
-Master Prompt Orchestrator - Dynamic Semantic Analysis
-Performs semantic extraction without hardcoded analysis types.
-Intelligently selects calculations based on query understanding.
+Master Prompt Orchestrator - LLM-Driven Semantic Analysis
+Performs semantic extraction for query intent.
+Uses LLM for intelligent column identification in analyzers.
+Includes Revenue Per Lead (RPL) analysis for efficiency metrics.
 """
 
 import json
@@ -13,8 +14,10 @@ try:
 except ImportError:
     pd = None
 
-from prompt_revenue import RevenueAnalyzer
-from prompt_leads import LeadsAnalyzer
+# Import LLM-driven analyzers
+from prompt_revenue_llm import RevenueAnalyzer
+from prompt_leads_llm import LeadsAnalyzer
+from prompt_revenue_per_lead import RevenuePerLeadAnalyzer
 from audit_logger import get_logger
 from semantic_extractor import SemanticExtractor, MetricDatabase, DimensionDatabase
 
@@ -25,12 +28,14 @@ class DynamicAnalysisOrchestrator:
     """
     Performs semantic extraction and dynamic analysis.
     No hardcoded analysis types - decides what to calculate based on intent.
+    Supports Revenue, Leads, and Revenue-Per-Lead (RPL) metrics.
     """
 
     def __init__(self):
         self.semantic_extractor = SemanticExtractor()
         self.revenue_analyzer = RevenueAnalyzer()
         self.leads_analyzer = LeadsAnalyzer()
+        self.rpl_analyzer = RevenuePerLeadAnalyzer()
         self.audit_logger = get_logger()
 
     def analyze(
@@ -120,23 +125,34 @@ class DynamicAnalysisOrchestrator:
         """Execute the analysis plan."""
         results = {}
 
-        for metric_key, metric_plan in plan["metrics_to_calculate"].items():
-            self.audit_logger.logger.info(f"[CALC] Processing metric: {metric_key}")
+        # Check if this is an RPL (Revenue Per Lead) query
+        is_rpl_query = self._is_rpl_query(query, intent)
 
-            if metric_key == "revenue":
-                results[metric_key] = self._calculate_revenue(
-                    metric_plan, dataset, query
-                )
-            elif metric_key == "leads":
-                results[metric_key] = self._calculate_leads(
-                    metric_plan, dataset, query
-                )
-            elif metric_key == "conversions":
-                results[metric_key] = self._calculate_conversions(
-                    metric_plan, dataset, query
-                )
-            else:
-                self.audit_logger.logger.warning(f"Unknown metric: {metric_key}")
+        if is_rpl_query:
+            # Special handling for RPL analysis
+            self.audit_logger.logger.info("[CALC] Processing metric: revenue_per_lead (RPL)")
+            results["revenue_per_lead"] = self._calculate_rpl(
+                plan, dataset, query
+            )
+        else:
+            # Standard metric-by-metric calculation
+            for metric_key, metric_plan in plan["metrics_to_calculate"].items():
+                self.audit_logger.logger.info(f"[CALC] Processing metric: {metric_key}")
+
+                if metric_key == "revenue":
+                    results[metric_key] = self._calculate_revenue(
+                        metric_plan, dataset, query
+                    )
+                elif metric_key == "leads":
+                    results[metric_key] = self._calculate_leads(
+                        metric_plan, dataset, query
+                    )
+                elif metric_key == "conversions":
+                    results[metric_key] = self._calculate_conversions(
+                        metric_plan, dataset, query
+                    )
+                else:
+                    self.audit_logger.logger.warning(f"Unknown metric: {metric_key}")
 
         return results
 
@@ -216,6 +232,100 @@ class DynamicAnalysisOrchestrator:
         # This would require conversions column in data
         return {"error": "Conversions metric not yet implemented"}
 
+    def _is_rpl_query(self, query: str, intent) -> bool:
+        """
+        Detect if this is a Revenue Per Lead (RPL) query.
+        
+        RPL queries ask for revenue efficiency metrics like:
+        - "revenue per lead"
+        - "revenue-wise lead analysis"
+        - "lead efficiency"
+        - "revenue by lead source"
+        """
+        query_lower = query.lower()
+        
+        rpl_keywords = [
+            "revenue per lead",
+            "revenue-wise lead",
+            "per lead",
+            "lead efficiency",
+            "rpl",
+            "revenue by lead source",
+            "revenue analysis by lead",
+            "revenue efficiency",
+        ]
+        
+        for keyword in rpl_keywords:
+            if keyword in query_lower:
+                self.audit_logger.logger.info(f"[RPL] Detected RPL query (keyword: '{keyword}')")
+                return True
+        
+        return False
+
+    def _calculate_rpl(
+        self,
+        metric_plan: Dict[str, Any],
+        dataset: pd.DataFrame,
+        query: str,
+    ) -> Dict[str, Any]:
+        """
+        Calculate Revenue Per Lead metrics.
+        
+        RPL = Total Revenue / Total Leads (by group if requested)
+        """
+        result = {}
+
+        try:
+            # Determine grouping dimension if requested
+            group_by = None
+            if metric_plan.get("get_breakdown") and metric_plan.get("breakdown_columns"):
+                dimension_key = metric_plan["breakdown_columns"][0]
+                group_by = self._find_actual_column(dimension_key, dataset)
+
+            # Run RPL analysis
+            rpl_result = self.rpl_analyzer.analyze_revenue_per_lead(
+                dataset=dataset,
+                group_by=group_by,
+                query=query
+            )
+
+            # Transform result for consistency with other metrics
+            result["overall"] = {
+                "total_revenue": rpl_result["overall_metrics"]["total_revenue"],
+                "total_leads": rpl_result["overall_metrics"]["total_leads"],
+                "revenue_per_lead": rpl_result["overall_metrics"]["revenue_per_lead"],
+            }
+
+            # Format breakdown if available
+            if rpl_result["by_group"]:
+                result["breakdown"] = {
+                    "group_breakdown": [
+                        {
+                            "entity_name": g["group_value"],
+                            "revenue": g["revenue"],
+                            "lead_count": g["lead_count"],
+                            "revenue_per_lead": g["rpl"],
+                        }
+                        for g in rpl_result["by_group"]
+                    ]
+                }
+
+            result["validation"] = rpl_result["validation"]
+            result["columns_used"] = rpl_result["columns_used"]
+
+            self.audit_logger.logger.info(
+                f"[RPL] Calculation complete: "
+                f"RPL={result['overall']['revenue_per_lead']:,.2f}, "
+                f"Revenue={result['overall']['total_revenue']:,.2f}, "
+                f"Leads={result['overall']['total_leads']}"
+            )
+
+        except Exception as e:
+            self.audit_logger.logger.error(f"[RPL] Calculation failed: {str(e)}")
+            result["error"] = str(e)
+
+        return result
+
     def _find_actual_column(self, dimension_key: str, dataset: pd.DataFrame) -> Optional[str]:
         """Find actual column name in dataset for a dimension."""
         possible_columns = DimensionDatabase.get_columns_for_dimension(dimension_key)
@@ -242,8 +352,22 @@ class DynamicAnalysisOrchestrator:
         """Combine individual metric results into final output."""
         combined = {}
 
-        # Flat structure if single metric
-        if len(results) == 1:
+        # Check if this is an RPL result
+        if "revenue_per_lead" in results:
+            rpl_data = results["revenue_per_lead"]
+            
+            combined["metric_type"] = "revenue_per_lead"
+            combined["overall"] = rpl_data.get("overall", {})
+            combined["columns_used"] = rpl_data.get("columns_used", {})
+            
+            if "breakdown" in rpl_data:
+                combined["group_breakdown"] = rpl_data["breakdown"]["group_breakdown"]
+
+            if "validation" in rpl_data:
+                combined["validation"] = rpl_data["validation"]
+
+        # Flat structure if single standard metric
+        elif len(results) == 1:
             metric_key = list(results.keys())[0]
             metric_results = results[metric_key]
 
@@ -339,7 +463,34 @@ class DynamicAnalysisOrchestrator:
         """Format a human-readable explanation of results."""
         lines = []
 
-        if "metrics" in combined:
+        # Special handling for RPL results
+        if combined.get("metric_type") == "revenue_per_lead":
+            lines.append("=== Revenue Per Lead (RPL) Analysis ===\n")
+            
+            overall = combined.get("overall", {})
+            lines.append(f"Overall RPL: ${overall.get('revenue_per_lead', 0):,.2f}")
+            lines.append(f"  Total Revenue: ${overall.get('total_revenue', 0):,.2f}")
+            lines.append(f"  Total Leads: {overall.get('total_leads', 0)}")
+
+            # Add breakdown if available
+            if "group_breakdown" in combined:
+                lines.append("\nBreakdown by Source:")
+                for item in combined["group_breakdown"]:
+                    lines.append(
+                        f"  {item['entity_name']:<15} "
+                        f"Revenue: ${item['revenue']:>12,.2f} | "
+                        f"Leads: {item['lead_count']:>5} | "
+                        f"RPL: ${item['revenue_per_lead']:>10,.2f}"
+                    )
+
+            # Add validation notes if any
+            if "validation" in combined and not combined["validation"].get("passed", True):
+                lines.append("\n⚠️  Validation Notes:")
+                for note in combined["validation"].get("notes", []):
+                    lines.append(f"  - {note}")
+
+        # Standard metrics handling
+        elif "metrics" in combined:
             # Multiple metrics
             for metric_key, metric_data in combined.get("metrics", {}).items():
                 if metric_key == "revenue":

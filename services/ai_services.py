@@ -10,6 +10,10 @@ from mongo_client import mongo_client
 from utils.request_tracker import tracker
 from rag_retriever import RAGRetriever
 from routes import upload as upload_module
+from semantic_extractor import SemanticExtractor  # For query intent extraction
+import logging
+
+logger = logging.getLogger(__name__)
 
 # System prompt for AI analysis
 SYSTEM_PROMPT = """
@@ -99,6 +103,79 @@ def format_rupee_kpi_value(kpi):
         formatted_kpi["value"] = format_indian_number(formatted_kpi.get("value"))
 
     return formatted_kpi
+
+
+# ----------------------------
+# DYNAMIC KPI LABELING
+# ----------------------------
+def get_metric_display_name(metric: str) -> str:
+    """
+    Convert metric key to a display-friendly name.
+    Examples: 'revenue' -> 'Revenue', 'leads' -> 'Leads'
+    """
+    metric_names = {
+        'revenue': 'Revenue',
+        'leads': 'Leads',
+        'conversions': 'Conversions',
+        'profit': 'Profit',
+        'roi': 'ROI',
+        'deals': 'Deals',
+        'count': 'Count',
+    }
+    return metric_names.get(metric.lower(), metric.title())
+
+
+def rename_kpis_dynamically(kpis: list, query: str, dataset: object = None) -> list:
+    """
+    Dynamically rename KPI labels based on the user query intent.
+    Instead of 'METRIC 1', 'METRIC 2', uses actual metric names.
+    
+    Example:
+    - Query: "What is the total revenue?"
+    - Input KPIs: [{"name": "METRIC 1", "value": 1260445, ...}]
+    - Output: [{"name": "Revenue", "value": 1260445, ...}]
+    """
+    if not kpis:
+        return kpis
+    
+    try:
+        # Extract semantic intent from query
+        extractor = SemanticExtractor()
+        intent = extractor.extract_intent(query, dataset)
+        
+        print(f"\n[KPI LABELING] Requested metrics: {intent.requested_metrics}")
+        print(f"[KPI LABELING] Available KPIs: {len(kpis)}")
+        logger.info(f"[KPI LABELING] Detected metrics: {intent.requested_metrics}")
+        
+        # Create a mapping of metric types to display names
+        metric_labels = [get_metric_display_name(m) for m in sorted(intent.requested_metrics)]
+        
+        # Rename KPIs based on the detected metrics order
+        renamed_kpis = []
+        for idx, kpi in enumerate(kpis):
+            renamed_kpi = kpi.copy()
+            
+            # Use detected metric names, or fallback to generic METRIC N
+            if idx < len(metric_labels):
+                # Check if KPI name looks like a generic metric label
+                if renamed_kpi.get("name", "").upper().startswith("METRIC"):
+                    old_name = renamed_kpi.get("name", "")
+                    renamed_kpi["name"] = metric_labels[idx]
+                    print(f"[KPI LABELING] KPI {idx+1}: '{old_name}' -> '{metric_labels[idx]}'")
+                    logger.info(f"[KPI LABELING] Renamed KPI: {old_name} -> {metric_labels[idx]}")
+                else:
+                    print(f"[KPI LABELING] KPI {idx+1}: '{renamed_kpi.get('name')}' (already named)")
+            
+            renamed_kpis.append(renamed_kpi)
+        
+        print(f"[KPI LABELING] Final KPI names: {[k.get('name') for k in renamed_kpis]}")
+        return renamed_kpis
+        
+    except Exception as e:
+        logger.warning(f"[KPI LABELING] Error during dynamic rename: {e}")
+        print(f"[KPI LABELING] Warning: Could not rename KPIs: {e}")
+        # Return KPIs unchanged if renaming fails
+        return kpis
 
 
 SAFE_HTML_TAG_PATTERN = re.compile(
@@ -972,6 +1049,10 @@ User Query:
 
             final_kpis = [format_rupee_kpi_value(kpi) for kpi in parsed.get("kpis", [])]
             
+            # Dynamically rename KPIs based on query intent
+            print(f"\n[KPI NAMING] Dynamically labeling KPIs based on user query...")
+            final_kpis = rename_kpis_dynamically(final_kpis, message, None)
+            print(f"[KPI NAMING] KPI labeling complete\n")
 
             print("FINAL ANSWER:", answer)
 

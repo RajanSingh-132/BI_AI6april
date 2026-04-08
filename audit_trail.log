@@ -6060,3 +6060,397 @@
     "Total: 1260445.0"
   ]
 }
+2026-04-07 13:49:31,164 - AuditLogger - INFO - [REVENUE] LLM client initialized for column identification
+2026-04-07 13:49:38,543 - AuditLogger - INFO - AUDIT: {
+  "timestamp": "2026-04-07T13:49:38.543622",
+  "operation": "calculate_total_revenue",
+  "module": "prompt_revenue",
+  "query": "What is the total revenue?",
+  "input_rows": 100,
+  "output_rows": 100,
+  "filters_applied": [],
+  "formula_used": "SUM(revenue_earned_(\u20b9))",
+  "result_value": 1260445.0,
+  "column_mapping": {
+    "revenue": "revenue_earned_(\u20b9)"
+  },
+  "validation_status": true,
+  "error_message": "",
+  "notes": [
+    "LLM identified column: revenue_earned_(\u20b9)",
+    "Reasoning: The column 'revenue_earned_(\u20b9)' explicitly uses the terms 'revenue' and 'earned', directly indicating actual realized income. This aligns perfectly with the requirement to prefer 'revenue_earned' over 'deal_amount' (actual vs potential). It is also of a numeric data type (int64). Although the sample values are all 0, this reflects the current state of those specific rows rather than the column's intended semantic meaning as the place for earned revenue.",
+    "Rows: 100/100"
+  ]
+}
+2026-04-07 13:50:36,707 - AuditLogger - INFO - [LEADS] LLM client initialized
+2026-04-07 13:50:42,094 - AuditLogger - INFO - [LEADS_LLM] Selected: lead_id (row_count=False)
+2026-04-07 13:50:42,101 - AuditLogger - INFO - AUDIT: {
+  "timestamp": "2026-04-07T13:50:42.101503",
+  "operation": "calculate_total_leads",
+  "module": "prompt_leads",
+  "query": "How many leads do we have?",
+  "input_rows": 100,
+  "output_rows": 100,
+  "filters_applied": [],
+  "formula_used": "COUNT(lead_id)",
+  "result_value": 100.0,
+  "column_mapping": {
+    "lead_id": "lead_id"
+  },
+  "validation_status": true,
+  "error_message": "",
+  "notes": [
+    "LLM identified method: lead_id",
+    "Reasoning: The dataset explicitly includes a 'lead_id' column, which is the most direct and reliable identifier for counting individual leads. Counting distinct values in this column will provide the most accurate count of unique leads.",
+    "Rows: 100/100"
+  ]
+}
+2026-04-07 13:51:01,376 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-07 13:51:01,378 - AuditLogger - WARNING - [REVENUE] No LLM client - using fallback
+2026-04-07 13:51:01,379 - AuditLogger - INFO - AUDIT: {
+  "timestamp": "2026-04-07T13:51:01.379295",
+  "operation": "calculate_total_revenue",
+  "module": "prompt_revenue",
+  "query": "What is the total revenue?",
+  "input_rows": 100,
+  "output_rows": 100,
+  "filters_applied": [],
+  "formula_used": "SUM(revenue_earned_(\u20b9))",
+  "result_value": 1260445.0,
+  "column_mapping": {
+    "revenue": "revenue_earned_(\u20b9)"
+  },
+  "validation_status": true,
+  "error_message": "",
+  "notes": [
+    "LLM identified column: revenue_earned_(\u20b9)",
+    "Reasoning: Fallback regex match: revenue_earned",
+    "Rows: 100/100"
+  ]
+}
+2026-04-07 16:33:44,049 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: What is the total revenue?
+2026-04-07 16:33:44,051 - AuditLogger - INFO - [METRICS] Detected: {'revenue'}
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [OPERATIONS] Total=True, Breakdown=False, Comparison=False, Combined=False
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: Revenue breakdown by source
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [METRICS] Detected: {'revenue'}
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [DIMENSIONS] Detected: {'source'}
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=False, Combined=False
+2026-04-07 16:33:44,052 - AuditLogger - INFO - [OPS] To perform: {'breakdown'}
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [CONFIDENCE] 33.33%
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: How many leads do we have?
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: Compare revenue and leads by source
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [METRICS] Detected: {'revenue', 'leads'}
+2026-04-07 16:33:44,053 - AuditLogger - INFO - [DIMENSIONS] Detected: {'source'}
+2026-04-07 16:33:44,054 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=True, Combined=True
+2026-04-07 16:33:44,054 - AuditLogger - INFO - [OPS] To perform: {'breakdown', 'combined_analysis'}
+2026-04-07 16:33:44,054 - AuditLogger - INFO - [CONFIDENCE] 33.33%
+2026-04-07 17:38:52,539 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: What is the total revenue and deals?
+2026-04-07 17:38:52,541 - AuditLogger - INFO - [METRICS] Detected: {'revenue'}
+2026-04-07 17:38:52,541 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-07 17:38:52,541 - AuditLogger - INFO - [OPERATIONS] Total=True, Breakdown=False, Comparison=False, Combined=True
+2026-04-07 17:38:52,542 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-07 17:38:52,542 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-07 17:38:52,542 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: How many leads do we have?
+2026-04-07 17:38:52,543 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-07 17:38:52,543 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-07 17:38:52,544 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-07 17:38:52,544 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-07 17:38:52,544 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-07 17:39:36,311 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: worst leads?
+2026-04-07 17:39:36,317 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-07 17:39:36,319 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-07 17:39:36,320 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-07 17:39:36,321 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-07 17:39:36,326 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-07 17:48:53,581 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: lead analysis ,revenue wise
+2026-04-07 17:48:53,592 - AuditLogger - INFO - [METRICS] Detected: {'leads', 'revenue'}
+2026-04-07 17:48:53,598 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-07 17:48:53,600 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-07 17:48:53,605 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-07 17:48:53,611 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 10:37:43,304 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: calculate the total revenue?
+2026-04-08 10:37:43,310 - AuditLogger - INFO - [METRICS] Detected: {'revenue'}
+2026-04-08 10:37:43,311 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 10:37:43,312 - AuditLogger - INFO - [OPERATIONS] Total=True, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 10:37:43,314 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 10:37:43,316 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 10:39:59,123 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: top revenue?
+2026-04-08 10:39:59,126 - AuditLogger - INFO - [METRICS] Detected: {'revenue'}
+2026-04-08 10:39:59,129 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 10:39:59,130 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 10:39:59,133 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 10:39:59,134 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 10:41:52,655 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: leads analysis revenue wise
+2026-04-08 10:41:52,657 - AuditLogger - INFO - [METRICS] Detected: {'leads', 'revenue'}
+2026-04-08 10:41:52,660 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 10:41:52,662 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 10:41:52,664 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 10:41:52,666 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 10:45:40,589 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: total leads ?
+2026-04-08 10:45:40,591 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-08 10:45:40,592 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 10:45:40,593 - AuditLogger - INFO - [OPERATIONS] Total=True, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 10:45:40,595 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 10:45:40,596 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 10:51:06,129 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: best leads and worst leads?
+2026-04-08 10:51:06,130 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-08 10:51:06,131 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 10:51:06,132 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=True
+2026-04-08 10:51:06,132 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 10:51:06,133 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 11:03:17,421 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: what is worst leads?
+2026-04-08 11:03:17,425 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-08 11:03:17,427 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:03:17,427 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 11:03:17,428 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 11:03:17,429 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 11:06:51,820 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: what is best lead?
+2026-04-08 11:06:51,826 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-08 11:06:51,828 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:06:51,828 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 11:06:51,832 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 11:06:51,833 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 11:54:36,274 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-08 11:54:36,274 - AuditLogger - WARNING - [LEADS] GEMINI_API_KEY not set
+2026-04-08 11:55:13,539 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-08 11:55:13,539 - AuditLogger - WARNING - [LEADS] GEMINI_API_KEY not set
+2026-04-08 11:55:13,540 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:13,540 - AuditLogger - INFO - Query: Give me revenue per lead analysis
+2026-04-08 11:55:13,541 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: Give me revenue per lead analysis
+2026-04-08 11:55:13,543 - AuditLogger - INFO - [METRICS] Detected: {'leads', 'revenue'}
+2026-04-08 11:55:13,544 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:13,545 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=False, Combined=False
+2026-04-08 11:55:13,545 - AuditLogger - INFO - [OPS] To perform: set()
+2026-04-08 11:55:13,546 - AuditLogger - INFO - [CONFIDENCE] 16.67%
+2026-04-08 11:55:13,547 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}, 'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}}, 'has_breakdown': True, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:13,548 - AuditLogger - INFO - [RPL] Detected RPL query (keyword: 'revenue per lead')
+2026-04-08 11:55:13,548 - AuditLogger - INFO - [CALC] Processing metric: revenue_per_lead (RPL)
+2026-04-08 11:55:13,585 - AuditLogger - INFO - [RPL] Calculation complete: RPL=37,146.17, Revenue=3,714,617.00, Leads=100
+2026-04-08 11:55:13,585 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:13,588 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:13,588 - AuditLogger - INFO - Query: What is revenue-wise lead analysis by source
+2026-04-08 11:55:13,589 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: What is revenue-wise lead analysis by source
+2026-04-08 11:55:13,590 - AuditLogger - INFO - [METRICS] Detected: {'leads', 'revenue'}
+2026-04-08 11:55:13,591 - AuditLogger - INFO - [DIMENSIONS] Detected: {'source'}
+2026-04-08 11:55:13,592 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=False, Combined=False
+2026-04-08 11:55:13,593 - AuditLogger - INFO - [OPS] To perform: {'breakdown'}
+2026-04-08 11:55:13,594 - AuditLogger - INFO - [CONFIDENCE] 33.33%
+2026-04-08 11:55:13,595 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': {'source'}, 'breakdown_columns': ['source']}, 'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': {'source'}, 'breakdown_columns': ['source']}}, 'has_breakdown': True, 'has_combined': False, 'dimensions': ['source']}
+2026-04-08 11:55:13,596 - AuditLogger - INFO - [RPL] Detected RPL query (keyword: 'revenue-wise lead')
+2026-04-08 11:55:13,596 - AuditLogger - INFO - [CALC] Processing metric: revenue_per_lead (RPL)
+2026-04-08 11:55:13,616 - AuditLogger - INFO - [RPL] Calculation complete: RPL=37,146.17, Revenue=3,714,617.00, Leads=100
+2026-04-08 11:55:13,616 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:13,620 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:13,620 - AuditLogger - INFO - Query: Show me revenue per lead breakdown
+2026-04-08 11:55:13,620 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: Show me revenue per lead breakdown
+2026-04-08 11:55:13,621 - AuditLogger - INFO - [METRICS] Detected: {'leads', 'revenue'}
+2026-04-08 11:55:13,621 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:13,622 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=False, Combined=False
+2026-04-08 11:55:13,622 - AuditLogger - INFO - [OPS] To perform: set()
+2026-04-08 11:55:13,623 - AuditLogger - INFO - [CONFIDENCE] 16.67%
+2026-04-08 11:55:13,624 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}, 'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}}, 'has_breakdown': True, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:13,624 - AuditLogger - INFO - [RPL] Detected RPL query (keyword: 'revenue per lead')
+2026-04-08 11:55:13,624 - AuditLogger - INFO - [CALC] Processing metric: revenue_per_lead (RPL)
+2026-04-08 11:55:13,640 - AuditLogger - INFO - [RPL] Calculation complete: RPL=37,146.17, Revenue=3,714,617.00, Leads=100
+2026-04-08 11:55:13,640 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:13,643 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-08 11:55:13,644 - AuditLogger - WARNING - [LEADS] GEMINI_API_KEY not set
+2026-04-08 11:55:13,644 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:13,644 - AuditLogger - INFO - Query: What is total revenue?
+2026-04-08 11:55:13,645 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: What is total revenue?
+2026-04-08 11:55:13,645 - AuditLogger - INFO - [METRICS] Detected: {'revenue'}
+2026-04-08 11:55:13,646 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:13,646 - AuditLogger - INFO - [OPERATIONS] Total=True, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 11:55:13,647 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 11:55:13,648 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 11:55:13,648 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': False, 'breakdown_columns': []}}, 'has_breakdown': False, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:13,648 - AuditLogger - INFO - [CALC] Processing metric: revenue
+2026-04-08 11:55:13,650 - AuditLogger - WARNING - [REVENUE] No LLM client - using fallback
+2026-04-08 11:55:13,652 - AuditLogger - INFO - AUDIT: {
+  "timestamp": "2026-04-08T11:55:13.652529",
+  "operation": "calculate_total_revenue",
+  "module": "prompt_revenue",
+  "query": "What is total revenue?",
+  "input_rows": 100,
+  "output_rows": 100,
+  "filters_applied": [],
+  "formula_used": "SUM(Company_Size)",
+  "result_value": 15355.0,
+  "column_mapping": {
+    "revenue": "Company_Size"
+  },
+  "validation_status": true,
+  "error_message": "",
+  "notes": [
+    "LLM identified column: Company_Size",
+    "Reasoning: Fallback: selected first numeric column",
+    "Rows: 100/100"
+  ]
+}
+2026-04-08 11:55:13,653 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:13,653 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:13,653 - AuditLogger - INFO - Query: How many leads?
+2026-04-08 11:55:13,654 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: How many leads?
+2026-04-08 11:55:13,654 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-08 11:55:13,655 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:13,655 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 11:55:13,656 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 11:55:13,656 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 11:55:13,657 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': False, 'breakdown_columns': []}}, 'has_breakdown': False, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:13,657 - AuditLogger - INFO - [CALC] Processing metric: leads
+2026-04-08 11:55:13,659 - AuditLogger - INFO - AUDIT: {
+  "timestamp": "2026-04-08T11:55:13.659094",
+  "operation": "calculate_total_leads",
+  "module": "prompt_leads",
+  "query": "How many leads?",
+  "input_rows": 100,
+  "output_rows": 100,
+  "filters_applied": [],
+  "formula_used": "COUNT(Lead_ID)",
+  "result_value": 100.0,
+  "column_mapping": {
+    "lead_id": "Lead_ID"
+  },
+  "validation_status": true,
+  "error_message": "",
+  "notes": [
+    "LLM identified method: Lead_ID",
+    "Reasoning: Fallback regex match: lead_id",
+    "Rows: 100/100"
+  ]
+}
+2026-04-08 11:55:13,659 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:21,856 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-08 11:55:21,856 - AuditLogger - WARNING - [LEADS] GEMINI_API_KEY not set
+2026-04-08 11:55:21,856 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:21,856 - AuditLogger - INFO - Query: Give me revenue per lead analysis
+2026-04-08 11:55:21,878 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-08 11:55:21,879 - AuditLogger - WARNING - [LEADS] GEMINI_API_KEY not set
+2026-04-08 11:55:21,879 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:21,879 - AuditLogger - INFO - Query: What is total revenue?
+2026-04-08 11:55:51,903 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-08 11:55:51,903 - AuditLogger - WARNING - [LEADS] GEMINI_API_KEY not set
+2026-04-08 11:55:51,903 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:51,903 - AuditLogger - INFO - Query: Give me revenue per lead analysis
+2026-04-08 11:55:51,904 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: Give me revenue per lead analysis
+2026-04-08 11:55:51,904 - AuditLogger - INFO - [METRICS] Detected: {'revenue', 'leads'}
+2026-04-08 11:55:51,904 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:51,904 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=False, Combined=False
+2026-04-08 11:55:51,904 - AuditLogger - INFO - [OPS] To perform: set()
+2026-04-08 11:55:51,904 - AuditLogger - INFO - [CONFIDENCE] 16.67%
+2026-04-08 11:55:51,904 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}, 'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}}, 'has_breakdown': True, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:51,905 - AuditLogger - INFO - [RPL] Detected RPL query (keyword: 'revenue per lead')
+2026-04-08 11:55:51,905 - AuditLogger - INFO - [CALC] Processing metric: revenue_per_lead (RPL)
+2026-04-08 11:55:51,911 - AuditLogger - ERROR - [RPL] Calculation failed: 'charmap' codec can't encode character '\u2717' in position 2: character maps to <undefined>
+2026-04-08 11:55:51,911 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:51,912 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:51,912 - AuditLogger - INFO - Query: What is revenue-wise lead analysis by source
+2026-04-08 11:55:51,912 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: What is revenue-wise lead analysis by source
+2026-04-08 11:55:51,912 - AuditLogger - INFO - [METRICS] Detected: {'revenue', 'leads'}
+2026-04-08 11:55:51,912 - AuditLogger - INFO - [DIMENSIONS] Detected: {'source'}
+2026-04-08 11:55:51,912 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=False, Combined=False
+2026-04-08 11:55:51,912 - AuditLogger - INFO - [OPS] To perform: {'breakdown'}
+2026-04-08 11:55:51,912 - AuditLogger - INFO - [CONFIDENCE] 33.33%
+2026-04-08 11:55:51,912 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': {'source'}, 'breakdown_columns': ['source']}, 'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': {'source'}, 'breakdown_columns': ['source']}}, 'has_breakdown': True, 'has_combined': False, 'dimensions': ['source']}
+2026-04-08 11:55:51,913 - AuditLogger - INFO - [RPL] Detected RPL query (keyword: 'revenue-wise lead')
+2026-04-08 11:55:51,913 - AuditLogger - INFO - [CALC] Processing metric: revenue_per_lead (RPL)
+2026-04-08 11:55:51,923 - AuditLogger - ERROR - [RPL] Calculation failed: 'charmap' codec can't encode character '\u2717' in position 2: character maps to <undefined>
+2026-04-08 11:55:51,924 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:51,924 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:51,924 - AuditLogger - INFO - Query: Show me revenue per lead breakdown
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: Show me revenue per lead breakdown
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [METRICS] Detected: {'revenue', 'leads'}
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=True, Comparison=False, Combined=False
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [OPS] To perform: set()
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [CONFIDENCE] 16.67%
+2026-04-08 11:55:51,924 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}, 'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': set(), 'breakdown_columns': []}}, 'has_breakdown': True, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [RPL] Detected RPL query (keyword: 'revenue per lead')
+2026-04-08 11:55:51,924 - AuditLogger - INFO - [CALC] Processing metric: revenue_per_lead (RPL)
+2026-04-08 11:55:51,932 - AuditLogger - ERROR - [RPL] Calculation failed: 'charmap' codec can't encode character '\u2717' in position 2: character maps to <undefined>
+2026-04-08 11:55:51,932 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:51,936 - AuditLogger - WARNING - [REVENUE] GEMINI_API_KEY not set - using fallback
+2026-04-08 11:55:51,936 - AuditLogger - WARNING - [LEADS] GEMINI_API_KEY not set
+2026-04-08 11:55:51,936 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:51,936 - AuditLogger - INFO - Query: What is total revenue?
+2026-04-08 11:55:51,936 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: What is total revenue?
+2026-04-08 11:55:51,936 - AuditLogger - INFO - [METRICS] Detected: {'revenue'}
+2026-04-08 11:55:51,937 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:51,937 - AuditLogger - INFO - [OPERATIONS] Total=True, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 11:55:51,937 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 11:55:51,937 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 11:55:51,937 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'revenue': {'metric': 'revenue', 'get_total': True, 'get_breakdown': False, 'breakdown_columns': []}}, 'has_breakdown': False, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:51,937 - AuditLogger - INFO - [CALC] Processing metric: revenue
+2026-04-08 11:55:51,938 - AuditLogger - WARNING - [REVENUE] No LLM client - using fallback
+2026-04-08 11:55:51,939 - AuditLogger - INFO - AUDIT: {
+  "timestamp": "2026-04-08T11:55:51.939337",
+  "operation": "calculate_total_revenue",
+  "module": "prompt_revenue",
+  "query": "What is total revenue?",
+  "input_rows": 100,
+  "output_rows": 100,
+  "filters_applied": [],
+  "formula_used": "SUM(Company_Size)",
+  "result_value": 15355.0,
+  "column_mapping": {
+    "revenue": "Company_Size"
+  },
+  "validation_status": true,
+  "error_message": "",
+  "notes": [
+    "LLM identified column: Company_Size",
+    "Reasoning: Fallback: selected first numeric column",
+    "Rows: 100/100"
+  ]
+}
+2026-04-08 11:55:51,939 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+
+2026-04-08 11:55:51,939 - AuditLogger - INFO - === Dynamic Semantic Analysis Started ===
+2026-04-08 11:55:51,939 - AuditLogger - INFO - Query: How many leads?
+2026-04-08 11:55:51,939 - AuditLogger - INFO - [SEMANTIC] Extracting intent from: How many leads?
+2026-04-08 11:55:51,940 - AuditLogger - INFO - [METRICS] Detected: {'leads'}
+2026-04-08 11:55:51,940 - AuditLogger - INFO - [DIMENSIONS] Detected: set()
+2026-04-08 11:55:51,940 - AuditLogger - INFO - [OPERATIONS] Total=False, Breakdown=False, Comparison=False, Combined=False
+2026-04-08 11:55:51,940 - AuditLogger - INFO - [OPS] To perform: {'total'}
+2026-04-08 11:55:51,940 - AuditLogger - INFO - [CONFIDENCE] 23.33%
+2026-04-08 11:55:51,940 - AuditLogger - INFO - Analysis plan: {'metrics_to_calculate': {'leads': {'metric': 'leads', 'get_total': True, 'get_breakdown': False, 'breakdown_columns': []}}, 'has_breakdown': False, 'has_combined': False, 'dimensions': []}
+2026-04-08 11:55:51,940 - AuditLogger - INFO - [CALC] Processing metric: leads
+2026-04-08 11:55:51,941 - AuditLogger - INFO - AUDIT: {
+  "timestamp": "2026-04-08T11:55:51.941890",
+  "operation": "calculate_total_leads",
+  "module": "prompt_leads",
+  "query": "How many leads?",
+  "input_rows": 100,
+  "output_rows": 100,
+  "filters_applied": [],
+  "formula_used": "COUNT(Lead_ID)",
+  "result_value": 100.0,
+  "column_mapping": {
+    "lead_id": "Lead_ID"
+  },
+  "validation_status": true,
+  "error_message": "",
+  "notes": [
+    "LLM identified method: Lead_ID",
+    "Reasoning: Fallback regex match: lead_id",
+    "Rows: 100/100"
+  ]
+}
+2026-04-08 11:55:51,942 - AuditLogger - INFO - === Dynamic Semantic Analysis Completed ===
+

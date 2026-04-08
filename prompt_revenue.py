@@ -1,17 +1,26 @@
 """
 SIMPLIFIED Revenue Analysis Module
 Single formula: Total Revenue = SUM(revenue_column)
-Comprehensive audit logging for full trail.
+
+The LLM intelligently identifies the revenue column from the dataset schema.
+No hardcoded column lists - fully dynamic and semantic.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Tuple
+import os
+from typing import Any, Dict, List, Tuple, Optional
 from audit_logger import get_logger, AuditLog
 from datetime import datetime
 from pydantic import BaseModel, Field
+
+try:
+    from google import genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
 
 try:
     import pandas as pd
@@ -26,46 +35,60 @@ except ImportError:
 # Configure logging
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """
-You are an AI Business Analyst focused on REVENUE ANALYSIS using a SINGLE, SIMPLE FORMULA.
+COLUMN_IDENTIFICATION_PROMPT = """
+You are an expert data analyst. Given a dataset schema, identify the most appropriate revenue/amount column.
 
-FORMULA: Total Revenue = SUM(deal_value_or_revenue_column)
+Consider:
+1. Column names - prefer columns containing: "revenue", "earned", "amount", "sales", "value", "deal"
+2. Column semantics - prefer "revenue_earned" over "deal_amount" (actual vs potential)
+3. Data types - should be numeric (int or float)
+4. Context - choose the column that represents actual earned/realized revenue
+
+Return ONLY a JSON response:
+{
+  "column_name": "the_exact_column_name_from_schema",
+  "reasoning": "why you selected this column",
+  "confidence": 0.0-1.0,
+  "alternatives": ["other_column_names_if_any"]
+}
+
+If no suitable revenue column exists, return:
+{
+  "column_name": null,
+  "reasoning": "explanation of why",
+  "confidence": 0.0,
+  "alternatives": []
+}
+"""
+
+ANALYSIS_PROMPT = """
+You are an AI Business Analyst. Analyze revenue using a SINGLE FORMULA: Total Revenue = SUM(revenue_column)
+
+Given:
+- Dataset: with rows and columns
+- Revenue column: identified column to use
+- User query: what analysis is requested
 
 Rules:
 1. Treat the dataset as the ONLY source of truth. NO fabrication.
-2. Identify the revenue column (Deal_Value, revenue, amount, or similar).
-3. Apply only filters explicitly mentioned in the user query.
-4. Return SUM of all revenue values from matching rows.
-5. Group by entity (e.g., Lead_Source, Owner, Industry) ONLY if user asks for breakdown.
-6. When grouped, sum_of_group_values MUST equal total_dataset_value exactly.
-7. row_count_lock must match the actual number of rows used.
-8. If a required column is missing, set validation_passed=false.
+2. Apply only filters explicitly mentioned in the user query.
+3. Calculate SUM of the revenue column for matching rows.
+4. Group by entity ONLY if user asks for breakdown.
+5. When grouped, sum_of_group_values MUST equal total exactly.
+6. Return JSON with complete analysis.
 
 Output structure (JSON only):
 {
   "query": "user query",
-  "revenue_column_identified": "column_name",
+  "revenue_column_used": "column_name",
   "filters_applied": ["filter1", "filter2"],
   "total_rows_in_dataset": N,
   "rows_after_filters": N,
   "total_revenue": FLOAT,
-  "group_breakdown": [{"entity": "value", "entity_name": "name", "revenue": FLOAT, "rows": N}],
+  "group_breakdown": [{"entity": "value", "revenue": FLOAT, "rows": N}],
   "validation_passed": true/false,
   "validation_notes": ["note1"]
 }
-"""
-
-
-CORRECTION_SYSTEM_PROMPT = """
-You are correcting a failed revenue analysis using the SAME SIMPLE FORMULA.
-
-Formula: Total Revenue = SUM(revenue_column)
-
-Recalculate:
-1. Identify the revenue column correctly.
-2. Apply all filters from the original query.
-3. Sum the revenue values.
-4. Return corrected JSON only.
 """
 
 

@@ -164,34 +164,69 @@ class SemanticExtractor:
         Extract semantic intent from query without predefined types.
         Dynamically identifies what the user is asking for.
         """
+        print("\n" + "="*60)
+        print(f"[STARTING] SEMANTIC EXTRACTION")
+        print(f"   Query: '{query}'")
+        print("="*60)
+        
         intent = QueryIntent(original_query=query)
         query_lower = query.lower()
         words = query_lower.split()
         
+        logger.info(f"[SEMANTIC] Starting extraction for: {query}")
         self.audit_logger.logger.info(f"[SEMANTIC] Extracting intent from: {query}")
         
         # 1. Detect requested metrics
+        print("\n[STEP 1] Extracting Metrics...")
         intent.requested_metrics = self._extract_metrics(query_lower, dataset)
+        print(f"   OK Metrics found: {intent.requested_metrics}")
+        logger.info(f"[METRICS] Extracted: {intent.requested_metrics}")
         self.audit_logger.logger.info(f"[METRICS] Detected: {intent.requested_metrics}")
         
         # 2. Detect requested dimensions
+        print("\n[STEP 2] Extracting Dimensions...")
         intent.requested_dimensions = self._extract_dimensions(query_lower, dataset)
+        if intent.requested_dimensions:
+            print(f"   OK Dimensions found: {intent.requested_dimensions}")
+        else:
+            print(f"   INFO No dimensions specified (will return total)")
+        logger.info(f"[DIMENSIONS] Extracted: {intent.requested_dimensions}")
         self.audit_logger.logger.info(f"[DIMENSIONS] Detected: {intent.requested_dimensions}")
         
         # 3. Detect operations
+        print("\n[STEP 3] Detecting Operations...")
         intent.is_asking_for_total = self._check_operation(
             query_lower, self.TOTAL_KEYWORDS
         )
+        if intent.is_asking_for_total:
+            print(f"   OK Total/Sum operation detected")
+            logger.debug(f"   Found total keywords: {self.TOTAL_KEYWORDS}")
+        
         intent.is_asking_for_breakdown = self._check_operation(
             query_lower, self.BREAKDOWN_KEYWORDS
         )
+        if intent.is_asking_for_breakdown:
+            print(f"   OK Breakdown operation detected")
+            logger.debug(f"   Found breakdown keywords")
+        
         intent.is_asking_for_comparison = self._check_operation(
             query_lower, self.COMPARISON_KEYWORDS
         )
+        if intent.is_asking_for_comparison:
+            print(f"   OK Comparison operation detected")
+        
         intent.is_asking_for_combined = self._check_operation(
             query_lower, self.COMBINED_KEYWORDS
         )
+        if intent.is_asking_for_combined:
+            print(f"   OK Combined analysis requested")
         
+        logger.info(
+            f"[OPERATIONS] Total={intent.is_asking_for_total}, "
+            f"Breakdown={intent.is_asking_for_breakdown}, "
+            f"Comparison={intent.is_asking_for_comparison}, "
+            f"Combined={intent.is_asking_for_combined}"
+        )
         self.audit_logger.logger.info(
             f"[OPERATIONS] Total={intent.is_asking_for_total}, "
             f"Breakdown={intent.is_asking_for_breakdown}, "
@@ -200,16 +235,30 @@ class SemanticExtractor:
         )
         
         # 4. Determine requested operations
+        print("\n[STEP 4] Determining Operations to Perform...")
         intent.requested_operations = self._determine_operations(intent)
+        print(f"   OK Operations: {intent.requested_operations}")
+        logger.info(f"[OPS] Operations determined: {intent.requested_operations}")
         self.audit_logger.logger.info(f"[OPS] To perform: {intent.requested_operations}")
         
         # 5. Calculate confidence
+        print("\n[STEP 5] Calculating Confidence Score...")
         intent.confidence = self._calculate_confidence(intent)
+        print(f"   OK Confidence: {intent.confidence:.1%}")
         
         # Add reasoning
         intent.reasoning = self._build_reasoning(intent)
+        if intent.reasoning:
+            print("\n[INFO] Reasoning:")
+            for reason in intent.reasoning:
+                print(f"   • {reason}")
         
+        logger.info(f"[CONFIDENCE] {intent.confidence:.2%}")
         self.audit_logger.logger.info(f"[CONFIDENCE] {intent.confidence:.2%}")
+        
+        print("\n" + "="*60)
+        print(f"OK EXTRACTION COMPLETE")
+        print("="*60 + "\n")
         
         return intent
     
@@ -220,6 +269,7 @@ class SemanticExtractor:
     ) -> Set[str]:
         """Extract metric names from query."""
         import re
+        logger.debug(f"[_extract_metrics] Starting metric extraction from: '{query_lower}'")
         metrics = set()
         
         # Check for each metric using word boundaries to avoid matching partial words
@@ -238,26 +288,34 @@ class SemanticExtractor:
                         remaining = query_lower[pos:].strip()
                         # If "source" or "_source" follows "lead", skip it (it's a dimension, not a metric)
                         if remaining.startswith("source") or remaining.startswith("_source"):
+                            logger.debug(f"[_extract_metrics] 'lead' is part of dimension, skipping")
                             continue
                         # If "lead" appears before "by", it might be a dimension
                         if remaining.startswith("by"):
+                            logger.debug(f"[_extract_metrics] 'lead' appears before 'by', likely dimension")
                             continue
                     
+                    logger.debug(f"[_extract_metrics] Found metric '{metric_key}' via alias '{alias}'")
                     metrics.add(metric_key)
                     break  # Found this metric, move to next metric
         
         # If no metrics found, infer from context
         if not metrics:
+            logger.debug(f"[_extract_metrics] No explicit metrics found, inferring from context")
             # If asking "how many", probably leads
             if "how many" in query_lower or "count" in query_lower:
+                logger.debug(f"[_extract_metrics] Context suggests 'leads' (how many / count)")
                 metrics.add("leads")
             # If asking about money/finances, probably revenue
             elif any(w in query_lower for w in ["much", "money", "dollar", "$", "earn"]):
+                logger.debug(f"[_extract_metrics] Context suggests 'revenue' (money/finance)")
                 metrics.add("revenue")
             # Default: revenue if ambiguous
             else:
+                logger.debug(f"[_extract_metrics] No context clues, defaulting to 'revenue'")
                 metrics.add("revenue")
         
+        logger.info(f"[_extract_metrics] Final metrics: {metrics}")
         return metrics
     
     def _extract_dimensions(
@@ -266,25 +324,32 @@ class SemanticExtractor:
         dataset: pd.DataFrame,
     ) -> Set[str]:
         """Extract dimension names from query."""
+        logger.debug(f"[_extract_dimensions] Starting dimension extraction")
         dimensions = set()
         
         # Look for dimension keywords
+        logger.debug(f"[_extract_dimensions] Checking known dimension aliases...")
         for dim_key, dim_def in DimensionDatabase.DIMENSIONS.items():
             for alias in dim_def["aliases"]:
                 if alias in query_lower:
+                    logger.debug(f"[_extract_dimensions] Found dimension '{dim_key}' via alias '{alias}'")
                     dimensions.add(dim_key)
                     break
         
         # Look for column names in query directly
         if dataset is not None and isinstance(dataset, pd.DataFrame):
+            logger.debug(f"[_extract_dimensions] Checking dataset columns ({len(dataset.columns)} columns)...")
             for col in dataset.columns:
                 if col.lower() in query_lower:
+                    logger.debug(f"[_extract_dimensions] Dataset column '{col}' found in query")
                     # Find dimension key for this column
                     for dim_key, dim_def in DimensionDatabase.DIMENSIONS.items():
                         if col in dim_def["columns"]:
+                            logger.debug(f"[_extract_dimensions] Column '{col}' mapped to dimension '{dim_key}'")
                             dimensions.add(dim_key)
                             break
         
+        logger.info(f"[_extract_dimensions] Final dimensions: {dimensions}")
         return dimensions
     
     def _check_operation(
@@ -295,50 +360,63 @@ class SemanticExtractor:
         """Check if query contains operation keywords."""
         for keyword in keywords:
             if keyword in query_lower:
+                logger.debug(f"[_check_operation] Found operation keyword: '{keyword}'")
                 return True
+        logger.debug(f"[_check_operation] No operation keywords found from: {keywords}")
         return False
     
     def _determine_operations(self, intent: QueryIntent) -> Set[str]:
         """Determine what operations to perform based on intent."""
+        logger.debug(f"[_determine_operations] Starting operation determination")
         operations = set()
         
         # If asking for breakdown with dimensions, add "breakdown"
         if intent.is_asking_for_breakdown and intent.requested_dimensions:
+            logger.debug(f"[_determine_operations] Adding 'breakdown' (breakdown request + dimensions exist)")
             operations.add("breakdown")
         
         # If asking for total or no breakdown, add "total"
         if intent.is_asking_for_total or not intent.is_asking_for_breakdown:
+            logger.debug(f"[_determine_operations] Adding 'total' (explicit total request or default)")
             operations.add("total")
         
         # If asking for comparison or multiple metrics together
         if intent.is_asking_for_comparison or (
             intent.is_asking_for_combined and len(intent.requested_metrics) > 1
         ):
+            logger.debug(f"[_determine_operations] Adding 'combined_analysis' (comparison/combined metrics)")
             operations.add("combined_analysis")
         
+        logger.info(f"[_determine_operations] Final operations: {operations}")
         return operations
     
     def _calculate_confidence(self, intent: QueryIntent) -> float:
         """Calculate confidence in the extraction."""
+        logger.debug(f"[_calculate_confidence] Starting confidence calculation")
         score = 0.0
         factors = 0
         
         # Confidence from metrics detected
         if intent.requested_metrics:
             score += 0.5
+            logger.debug(f"[_calculate_confidence] +0.5 for metrics: {intent.requested_metrics}")
         factors += 1
         
         # Confidence from dimensions matching operations
         if intent.requested_dimensions and intent.is_asking_for_breakdown:
             score += 0.3
+            logger.debug(f"[_calculate_confidence] +0.3 for dimensions with breakdown: {intent.requested_dimensions}")
         factors += 1
         
         # Confidence from clear operations
         if intent.requested_operations:
             score += 0.2
+            logger.debug(f"[_calculate_confidence] +0.2 for operations: {intent.requested_operations}")
         factors += 1
         
-        return min(1.0, score / max(factors, 1))
+        confidence = min(1.0, score / max(factors, 1))
+        logger.info(f"[_calculate_confidence] Confidence: {confidence:.2%} (score={score:.2f}, factors={factors})")
+        return confidence
     
     def _build_reasoning(self, intent: QueryIntent) -> List[str]:
         """Build human-readable reasoning."""
